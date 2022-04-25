@@ -42,7 +42,7 @@ class MainWindow(QMainWindow, form_class):
 
         sheet_title = f'{self.store}_{str(datetime.datetime.now())[:len(str(datetime.datetime.now())) - 7][2:10].replace("-", "")}'
         self.write_ws = self.write_wb.create_sheet(sheet_title)
-        self.write_ws.append(['상품번호', '상품명', '가격', '배송비', '옵션'])
+        self.write_ws.append(["상품번호", "상품명", "가격", "배송비", "옵션"])
         url = "https://smartstore.naver.com/" + self.store
         res = requests.get(url)
 
