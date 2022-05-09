@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 # Mafia42 userdb fetcher
 
 
-version = "2.0"
+version = "2.0"2
 
 end = int(json.loads(requests.post("https://mafia42.com/board/get-lastDiscussion",
                                    json={"articles": {"page": 0}}).text)["articleData"][0]["article_id"]) + 1
