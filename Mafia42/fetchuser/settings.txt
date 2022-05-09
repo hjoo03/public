@@ -6,4 +6,4 @@ password=3829
 database=userdata_220429_temp
 
 /* Fetch Settings */
-last_fetch=870000
+last_fetch=883773

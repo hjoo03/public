@@ -1,11 +1,11 @@
 import requests, ray, time, json, pymysql
 from datetime import datetime, timedelta
 
-# Latest Modified Date : 2022/04/29
+# Latest Modified Date : 2022/05/09
 # Mafia42 userdb fetcher
 
 
-version = "2.0"
+version = "2.1"
 
 end = int(json.loads(requests.post("https://mafia42.com/board/get-lastDiscussion",
                                    json={"articles": {"page": 0}}).text)["articleData"][0]["article_id"]) + 1
@@ -79,7 +79,10 @@ def fetch(article_id):
         r = requests.get(f"https://mafia42.com/api/show-lastDiscussion/{article_id}")
 
     res = json.loads(r.text)
-    return res['boardData']['nickname'], res['boardData']['user_id'] if res['responseCode'] == 6 else None
+    if res['responseCode'] == 6:
+        return res['boardData']['nickname'], res['boardData']['user_id']
+    else:
+        return
 
 
 @ray.remote
