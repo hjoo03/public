@@ -225,11 +225,11 @@ class Sql:
 
 
 cnt = 1
-sql = Sql()
-sql.create_table()
 for (s, e) in split1:
     if __name__ == "__main__":
         main_old(s, e)
+sql = Sql()
+sql.create_table()
 sql.insert(old_users)
 
 for (s, e) in split2:
