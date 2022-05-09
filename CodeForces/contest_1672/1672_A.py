@@ -1,6 +1,4 @@
-inp = input().split()
-case = int(inp[0])
-inp.remove(str(case))
+case = int(input())
 
 
 def solve(number_log, log_list):
@@ -9,8 +7,8 @@ def solve(number_log, log_list):
 
 
 while case:
-    log = int(inp[0])
-    logs = [int(inp[i]) for i in range(1, log+1)]
+    log = int(input())
+    logs = input().split()
+    logs = [int(i) for i in logs]
     solve(log, logs)
-    inp = inp[log+1:]
-    case -= 1
+    case += -1
