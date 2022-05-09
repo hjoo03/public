@@ -1,9 +1,0 @@
-/* SQL Settings */
-user=root
-password=3829
-
-/* Database Settings */
-database=userdata_220429_temp
-
-/* Fetch Settings */
-last_fetch=870000
