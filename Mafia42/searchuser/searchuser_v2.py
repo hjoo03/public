@@ -7,9 +7,9 @@ from PyQt5 import uic
 form_class = uic.loadUiType("main.ui")[0]
 form_class2 = uic.loadUiType("sub.ui")[0]
 
-version = '2a'
+version = '2.1b'
 # Patch Notes
-#
+# Added Exception for wrong SQL Password
 #
 #
 # Last Updated : 2022/04/09
@@ -18,25 +18,11 @@ version = '2a'
 class Sql:
 
     def __init__(self):
-        f = open("settings.txt")
-        settings = f.readlines()
-        user = settings[1][5:].strip()
-        password = settings[2][9:].strip()
-        self.database = settings[5][9:].strip()
-        self.user_db = pymysql.connect(
-            user=user,
-            password=password,
-            host="127.0.0.1",
-            db="userdata",
-            charset="utf8"
-        )
-        self.cursor = self.user_db.cursor(pymysql.cursors.DictCursor)
-        self.statement = ""
-        f.close()
+        self.cursor = Win.user_db.cursor(pymysql.cursors.DictCursor)
 
     def search_id(self, string):
         global validity
-        statement = f"SELECT DISTINCT nickname, id FROM {self.database} WHERE nickname = '{string}'"
+        statement = f"SELECT DISTINCT nickname, id FROM {Win.table} WHERE nickname = '{string}'"
         self.cursor.execute(statement)
         try:
             return self.cursor.fetchall()[0]['id']
@@ -66,6 +52,27 @@ class MainWindow(QMainWindow, form_class):
         self.idinput.setValidator(self.onlyInt)
 
         self.datatype_dict = {0: None, 1: "ID", 2: "nickname", 3: "Refresh"}
+
+        f = open("settings.txt")
+        settings = f.readlines()
+        user = settings[1][5:].strip()
+        password = settings[2][9:].strip()
+        self.table = settings[5][9:].strip()
+
+        try:
+            self.user_db = pymysql.connect(
+                user=user,
+                password=password,
+                host="127.0.0.1",
+                db="userdata",
+                charset="utf8"
+            )
+            self.output(f"Connected to SQL; Table: '{self.table}'")
+        except pymysql.err.OperationalError:
+            self.warning_error07()
+            exit()
+        f.close()
+
         self.idinput.textChanged.connect(self.fetch_id)
         self.nickinput.textChanged.connect(self.fetch_nickname)
         self.searchbtn.clicked.connect(self.analyze)  # button triggers analyze()
@@ -204,6 +211,9 @@ class MainWindow(QMainWindow, form_class):
 
     def warning_error06(self, arg):
         QMessageBox.warning(self, "ValueError", "No such user: %s !" % arg)
+
+    def warning_error07(self):
+        QMessageBox.warning(self, "SQL Operational Error", "Check SQL Password!")
 
     def output(self, msg):
         self.console.append(msg)
