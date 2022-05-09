@@ -7,7 +7,7 @@ from PyQt5 import uic
 form_class = uic.loadUiType("main.ui")[0]
 form_class2 = uic.loadUiType("sub.ui")[0]
 
-version = '1a'
+version = '2a'
 # Patch Notes
 #
 #

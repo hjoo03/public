@@ -121,10 +121,10 @@ def main(x, y):
         data = ray.get(done[0])
         if data:
             if len(data) == 2:
-                if data not in userlist:
+                if str(data[1]) not in userlist:
                     new_users.append(data)
                     file = open("userlist.txt", 'a')
-                    file.write(str(data))
+                    file.write(str(data[1]))
                     file.close()
 
     cnt += 1
