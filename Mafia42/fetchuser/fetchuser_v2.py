@@ -127,7 +127,7 @@ def main(x, y):
                 if str(data[1]) not in userlist:
                     new_users.append(data)
                     file = open("userlist.txt", 'a')
-                    file.write(str(data[1]))
+                    file.write(str(data[1])+"\n")
                     file.close()
 
     cnt += 1
