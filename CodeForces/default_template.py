@@ -1,34 +1,41 @@
-from bisect import *
+# from bisect import *
 from io import BytesIO, IOBase
 import os, sys
+# ----------------------------------------------------------------------------------------------------------------------
+# Author: logo03
+# Created: 2022-05-11
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def main():
     case = int(input())
 
     def solve():
-        n, q = map(int, input().split())
-        candies = [int(i) for i in input().split()]
-        candies.sort()
-        candies.reverse()
-
-        candies_sum = [0]
-        for candy in candies:
-            candies_sum.append(candy + candies_sum[-1])
-
-        for i in range(0, q):
-            goal = int(input())
-
-            if candies_sum[-1] < goal:
-                print(-1)
-            else:
-                print(bisect_left(candies_sum, goal))
+        pass
 
     while case:
         solve()
         case += -1
 
+
 # ----------------------------------------------------------------------------------------------------------------------
+def gcd(gcd_x, gcd_y):
+    while gcd_y:
+        gcd_x, gcd_y = gcd_y, gcd_x % gcd_y
+    return gcd_x
+
+
+def lcm(lcm_x, lcm_y):
+    return lcm_x * lcm_y // gcd(lcm_x, lcm_y)
+
+
+def isprime(integer_x):
+    if integer_x <= 1:
+        return False
+    for i in range(2, int(integer_x ** 0.5) + 1):
+        if integer_x % i == 0:
+            return False
+    return True
 
 
 BUFSIZE = 8192
