@@ -3,6 +3,7 @@ from io import BytesIO, IOBase
 import os, sys
 try:
     sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+    # noinspection PyUnresolvedReferences
     from debug.debug import dbg
 except ModuleNotFoundError:
     pass
