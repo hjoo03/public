@@ -16,7 +16,7 @@ def main():
     case = int(input())
 
     def solve():
-        print(case)
+        pass
 
     while case:
         solve()
