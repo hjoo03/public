@@ -1,9 +1,14 @@
 # from bisect import *
 from io import BytesIO, IOBase
 import os, sys
+try:
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+    from debug.debug import dbg
+except ModuleNotFoundError:
+    pass
 # ----------------------------------------------------------------------------------------------------------------------
-# Author: logo03
-# Created: 2022-05-11
+# Author: logoo03
+# Created: 2022-05-11 03:10:02
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -11,7 +16,7 @@ def main():
     case = int(input())
 
     def solve():
-        pass
+        print(case)
 
     while case:
         solve()
