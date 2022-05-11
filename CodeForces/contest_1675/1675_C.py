@@ -1,5 +1,4 @@
 # from bisect import *
-# from math import *
 from io import BytesIO, IOBase
 import os, sys
 try:
@@ -10,16 +9,25 @@ try:
 except ModuleNotFoundError:
     pass
 # ----------------------------------------------------------------------------------------------------------------------
-# Author: logoo03
-# Created: 2022-05-11 03:10:02
-# ----------------------------------------------------------------------------------------------------------------------
 
 
 def main():
     case = int(input())
 
     def solve():
-        pass
+        ans = input()
+        thief = 0
+        last_1 = len(ans)-1-ans[::-1].index('1') if '1' in ans else 0
+        for i in range(last_1, len(ans)):
+            if ans[i] == '?':
+                thief += 1
+            elif ans[i] == '0':
+                thief += 1
+                break
+            else:
+                thief += 1
+                continue
+        print(thief)
 
     while case:
         solve()

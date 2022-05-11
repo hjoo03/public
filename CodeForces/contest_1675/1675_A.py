@@ -1,5 +1,4 @@
 # from bisect import *
-# from math import *
 from io import BytesIO, IOBase
 import os, sys
 try:
@@ -10,16 +9,19 @@ try:
 except ModuleNotFoundError:
     pass
 # ----------------------------------------------------------------------------------------------------------------------
-# Author: logoo03
-# Created: 2022-05-11 03:10:02
-# ----------------------------------------------------------------------------------------------------------------------
 
 
 def main():
     case = int(input())
 
     def solve():
-        pass
+        df, cf, uf, dogs, cats = map(int, input().split())
+        dog_left = dogs - df if dogs-df > 0 else 0
+        cat_left = cats - cf if cats-cf > 0 else 0
+        if (dog_left + cat_left) > uf:
+            print("NO")
+        else:
+            print("YES")
 
     while case:
         solve()

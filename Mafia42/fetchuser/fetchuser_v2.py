@@ -1,7 +1,7 @@
 import requests, ray, time, json, pymysql
 from datetime import datetime, timedelta
 
-# Latest Modified Date : 2022/05/09
+# Latest Modified Date : 2022/05/11
 # Mafia42 userdb fetcher
 
 
@@ -228,6 +228,7 @@ class Sql:
 
 
 cnt = 1
+print(f"[{timestamp()}] Fetch Initiated")
 for (s, e) in split1:
     if __name__ == "__main__":
         main_old(s, e)

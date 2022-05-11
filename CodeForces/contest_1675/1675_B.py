@@ -1,5 +1,5 @@
 # from bisect import *
-# from math import *
+from math import *
 from io import BytesIO, IOBase
 import os, sys
 try:
@@ -10,17 +10,28 @@ try:
 except ModuleNotFoundError:
     pass
 # ----------------------------------------------------------------------------------------------------------------------
-# Author: logoo03
-# Created: 2022-05-11 03:10:02
-# ----------------------------------------------------------------------------------------------------------------------
 
 
 def main():
     case = int(input())
 
     def solve():
-        pass
-
+        n = int(input())
+        arr = list(map(int, input().split()))
+        arr.reverse()
+        count = 0
+        for i in range(1, n):
+            while True:
+                if arr[i] >= arr[i-1]:
+                    if arr[i] != 0:
+                        arr[i] = floor(arr[i]/2)
+                    else:
+                        count = -1
+                        break
+                    count += 1
+                else:
+                    break
+        print(count)
     while case:
         solve()
         case += -1
