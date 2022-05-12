@@ -1,5 +1,6 @@
 # from bisect import *
 # from math import *
+from collections import defaultdict
 from io import BytesIO, IOBase
 import os, sys
 try:
@@ -16,7 +17,19 @@ def main():
     case = int(input())
 
     def solve():
-        pass
+        n = int(input())
+        parents = list(map(int, input().split()))
+        sons = defaultdict(int)
+        for i in range(0, n):
+            sons[parents[i]] += 1
+        ans = []
+        visited = [False] * n
+        for i in range(n, 0, -1):
+            if sons[i] == 0:
+                tpath = []
+                while not visited[i]:
+                    tpath.append(i)
+
 
     while case:
         solve()
@@ -41,6 +54,14 @@ def isprime(integer_x):
         if integer_x % i == 0:
             return False
     return True
+
+
+def most_frequent(data):  # Returns Most Frequent Value in List(least index)
+    return max(data, key=data.count)
+
+
+def least_frequent(data):  # Returns Least Frequent Value in List(least index)
+    return min(data, key=data.count)
 
 
 BUFSIZE = 8192
