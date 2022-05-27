@@ -22,7 +22,7 @@ def main():
 
     def solve():
         n, k = map(int, input().split())
-        arr = sorted(list(map(int, input().split())))  # Why using sorted() function?
+        arr = sorted(list(map(int, input().split())))  # TODO: Why using sorted() function?
 
         count_dict = defaultdict(int)
         for i in arr:
