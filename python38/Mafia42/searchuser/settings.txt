@@ -3,7 +3,4 @@ user=root
 password=1234
 
 /* Database Settings */
-database=userdata_220509
-
-/* Fetch Settings */
-last_fetch=883785
+database=userdata_220528
