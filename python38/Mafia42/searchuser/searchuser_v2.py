@@ -7,7 +7,7 @@ from PyQt5 import uic
 form_class = uic.loadUiType("main.ui")[0]
 form_class2 = uic.loadUiType("sub.ui")[0]
 
-version = '2.2b'
+version = '2.2a'
 
 # Patch Notes
 ###########################################################################
@@ -15,7 +15,7 @@ version = '2.2b'
 # Added SQL Update warning when usernames not accord with each other
 # Simplified Source Code
 ###########################################################################
-# Last Updated : 2022/05/29 23:49 +09
+# Last Updated : 2022/05/30 00:53 +09
 
 
 class Sql:
@@ -95,8 +95,7 @@ class MainWindow(QMainWindow, form_class):
                 self.warning_error02()
                 return
 
-            input_data = self.id if self.id else self.nickname
-            self.datatype = 1 if self.id else 2
+            input_data, self.datatype = (self.id, 1) if self.id else (self.nickname, 2)
 
             if not self.datatype:
                 self.warning_error05()
@@ -115,15 +114,16 @@ class MainWindow(QMainWindow, form_class):
                     self.warning_error06(self.nickname)
                     return
 
-            self.check(input_data)
+            self.data = self.check(input_data)
 
             if not validity:
                 self.warning_error08()
                 return
             validity = False
             self.output_data = ""
-            if self.data['NICKNAME'] != db_nickname:
-                self.warning_warn01(self.data['NICKNAME'], db_nickname)
+            if self.datatype == 2:
+                if self.data['NICKNAME'] != db_nickname:
+                    self.warning_warn01(self.data['NICKNAME'], db_nickname)
 
             last_fetch = input_data
 
@@ -150,6 +150,7 @@ class MainWindow(QMainWindow, form_class):
         global validity
 
         if not arg:
+            self.warning_error09()
             return
 
         payload = {'id': arg}
@@ -163,7 +164,7 @@ class MainWindow(QMainWindow, form_class):
         try:
             res = json.loads(r.text)
             validity = True
-            self.data = res['userData']
+            return res['userData']
 
         except json.decoder.JSONDecodeError:
             self.warning_error04()
@@ -199,6 +200,9 @@ class MainWindow(QMainWindow, form_class):
 
     def warning_error08(self):
         QMessageBox.warning(self, "[E08] Validity Error", "Unknown Error! Check source code for more information.")
+
+    def warning_error09(self):
+        QMessageBox.warning(self, "[E09] TypeError", "MainWindow.check() missing 1 required argument: int id")
 
     def warning_warn01(self, arg1, arg2):
         QMessageBox.warning((self, "[W01] Database Warning", "Database and Server doesn't match(%s, %s)" % arg1, arg2))
