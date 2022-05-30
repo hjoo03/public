@@ -1,0 +1,15 @@
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.csproj.AssemblyReference.cache
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.GeneratedMSBuildEditorConfig.editorconfig
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.AssemblyInfoInputs.cache
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.AssemblyInfo.cs
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.csproj.CoreCompileInputs.cache
+D:\dev\python\workspace8\public\C#\public\bin\Debug\net6.0\public.exe
+D:\dev\python\workspace8\public\C#\public\bin\Debug\net6.0\public.deps.json
+D:\dev\python\workspace8\public\C#\public\bin\Debug\net6.0\public.runtimeconfig.json
+D:\dev\python\workspace8\public\C#\public\bin\Debug\net6.0\public.dll
+D:\dev\python\workspace8\public\C#\public\bin\Debug\net6.0\public.pdb
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.dll
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\refint\public.dll
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.pdb
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\public.genruntimeconfig.cache
+D:\dev\python\workspace8\public\C#\public\obj\Debug\net6.0\ref\public.dll

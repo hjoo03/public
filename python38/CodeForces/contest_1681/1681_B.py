@@ -22,8 +22,9 @@ def main():
         m = int(input())
         shuffles = list(map(int, input().split()))
 
-        for s in shuffles:
-            pass  # TODO: Incomplete
+        s = sum(shuffles)
+        s %= n
+        print(deck[s])
 
     while case:
         solve()
