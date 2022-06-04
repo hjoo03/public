@@ -15,7 +15,7 @@ version = '2.2a'
 # Added SQL Update warning when usernames not accord with each other
 # Simplified Source Code
 ###########################################################################
-# Last Updated : 2022/05/30 00:53 +09
+# Last Updated : 2022/06/04 23:52 +09
 
 
 class Sql:
@@ -117,7 +117,6 @@ class MainWindow(QMainWindow, form_class):
             self.data = self.check(input_data)
 
             if not validity:
-                self.warning_error08()
                 return
             validity = False
             self.output_data = ""
