@@ -73,12 +73,13 @@ class MainWindow(QMainWindow, form_class):
                 db="userdata",
                 charset="utf8"
             )
-            self.output(f"Connected to SQL; Table: '{self.table}'")
+            self.output(f"Connected to SQL Database; Table: '{self.table}'")
         except pymysql.err.OperationalError:
             self.warning_error07()
             exit()
         f.close()
 
+        self.output(f"Mafia42 User Search Client v{version}")
         self.idinput.textChanged.connect(self.fetch_id)
         self.nickinput.textChanged.connect(self.fetch_nickname)
         self.searchbtn.clicked.connect(self.analyze)  # button triggers analyze()

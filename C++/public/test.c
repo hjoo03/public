@@ -5,7 +5,11 @@
 #include <malloc.h>
 
 
+typedef char* string;
+
 int main() {
+	string st = "hello, world!";
+	printf("%s", st);
 
 	return 0;
 }
