@@ -7,7 +7,7 @@ from PyQt5 import uic
 form_class = uic.loadUiType("main.ui")[0]
 form_class2 = uic.loadUiType("sub.ui")[0]
 
-version = '2.2a'
+version = '2.3a'
 
 # Patch Notes
 ###########################################################################
@@ -303,6 +303,10 @@ class MainWindow(QMainWindow, form_class):
         green = "%d" % int(hex_code[2:4], 16)
         blue = "%d" % int(hex_code[4:6], 16)
         self.data['nickname_color'] = f"{hex_code} (R: {red}/G: {green}/B: {blue})"
+        if self.data['fame']*0.015 <= 20:
+            self.data['fame'] = str(self.data['fame']) + f" (권위의 엽서: -20)"
+        else:
+            self.data['fame'] = str(self.data['fame']) + f" (권위의 엽서: {int((-1)*self.data['fame']*0.015 - 20)})"
 
 
 class SubWindow(QMainWindow, form_class2):
