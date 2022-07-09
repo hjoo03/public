@@ -47,6 +47,7 @@ class MainWindow(QMainWindow, form_class):
         super().__init__()
         self.setupUi(self)
         self.data_info()
+        self.win2 = None
         validity = False
         self.id = ""
         self.nickname = ""

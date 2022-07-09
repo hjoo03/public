@@ -1,11 +1,11 @@
 import requests, ray, time, json, pymysql
 from datetime import datetime, timedelta
 
-# Latest Modified Date : 2022/05/11
+# Latest Modified Date : 2022/06/19
 # Mafia42 userdb fetcher
 
 
-version = "2.1"
+version = "2.2"
 
 end = int(json.loads(requests.post("https://mafia42.com/board/get-lastDiscussion",
                                    json={"articles": {"page": 0}}).text)["articleData"][0]["article_id"]) + 1
@@ -16,6 +16,17 @@ username = settings[1][5:].strip()
 password = settings[2][9:].strip()
 last_fetch = int(settings[8][11:].strip())
 f.close()
+
+try:
+    check_db = pymysql.connect(
+                user=username,
+                password=password,
+                host="127.0.0.1",
+                db="userdata",
+                charset="utf8"
+            )
+except pymysql.err.OperationalError:
+    print("Failed Connection to SQL Server")
 
 f = open("userlist.txt", 'r')
 ul = f.readlines()
@@ -135,7 +146,7 @@ def main(x, y):
     ups = round((y - x + 1) / (endtime - starttime).seconds, 1) if endtime - starttime != 0 else 0
     estimatedmin = round((total - cnt)/ups/60, 1) if ups != 0 else 0
     ett = str(datetime.now() + timedelta(minutes=estimatedmin))
-    print(f"[DEBUG][{timestamp()}] fetch complete ({ups} users/sec, {estimatedmin} mins remaining)")
+    print(f"[DEBUG][{timestamp()}] partial fetch complete ({ups} users/sec, {estimatedmin} mins remaining)")
     print(f"[INFO][{timestamp()}] estimated endtime: {ett[:len(ett)-7]}")
     ray.shutdown()
 
@@ -163,7 +174,7 @@ def main_old(x, y):
     estimatedmin = round((total - cnt) / ups / 60, 1) if ups != 0 else 0
     ett = str(datetime.now() + timedelta(minutes=estimatedmin))
     print(
-        f"[DEBUG][{timestamp()}] fetch complete ({ups} users/sec, {estimatedmin} mins remaining)")
+        f"[DEBUG][{timestamp()}] partial fetch complete ({ups} users/sec, {estimatedmin} mins remaining)")
     print(f"[INFO][{timestamp()}] estimated endtime: {ett[:len(ett) - 7]}")
     ray.shutdown()
 
@@ -196,7 +207,6 @@ class Sql:
 
         except pymysql.err.OperationalError:
             print(f"[{timestamp()}] Table Already Exists!")
-            self.table_name = f"userdata_{self.date}_temp"
             self.cursor.execute(f"""
                 CREATE TABLE `{self.table_name}` (
                 nickname TEXT NULL,
@@ -204,6 +214,8 @@ class Sql:
                 )
                 COLLATE = 'utf8mb3_general_ci';
             """)
+            print(f"[{timestamp()}] Created Table")
+            self.table_name = f"userdata_{self.date}_temp"
 
     def insert(self, data_):
         statement = f"""
@@ -240,3 +252,5 @@ for (s, e) in split2:
     if __name__ == "__main__":
         main(s, e)
 sql.insert(new_users)
+
+print(f"[{timestamp()}] fetchuser_v2 Complete!")

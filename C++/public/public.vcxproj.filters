@@ -18,5 +18,11 @@
     <ClCompile Include="test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="final_exam.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="final_exam_2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
