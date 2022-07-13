@@ -7,7 +7,7 @@ from PyQt5 import uic
 form_class = uic.loadUiType("main.ui")[0]
 form_class2 = uic.loadUiType("sub.ui")[0]
 
-version = '2.3a'
+version = '2.3'
 
 # Patch Notes
 ###########################################################################
@@ -15,7 +15,7 @@ version = '2.3a'
 # Added SQL Update warning when usernames not accord with each other
 # Simplified Source Code
 ###########################################################################
-# Last Updated : 2022/06/04 23:52 +09
+# Last Updated : 2022/07/049 22:33 +09
 
 
 class Sql:
@@ -71,7 +71,7 @@ class MainWindow(QMainWindow, form_class):
                 user=user,
                 password=password,
                 host="127.0.0.1",
-                db="userdata",
+                db="mafia42",
                 charset="utf8"
             )
             self.output(f"Connected to SQL Database; Table: '{self.table}'")

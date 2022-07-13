@@ -22,11 +22,11 @@ try:
                 user=username,
                 password=password,
                 host="127.0.0.1",
-                db="userdata",
+                db="mafia42",
                 charset="utf8"
             )
 except pymysql.err.OperationalError:
-    print("Failed Connection to SQL Server")
+    print("Failed Connecting to SQL Server")
 
 f = open("userlist.txt", 'r')
 ul = f.readlines()
@@ -185,7 +185,7 @@ class Sql:
             user=username,
             password=password,
             host="127.0.0.1",
-            db="userdata",
+            db="mafia42",
             charset="utf8"
         )
         print(f"[{timestamp()}] Connected to SQL Server")
