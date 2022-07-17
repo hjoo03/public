@@ -1,29 +1,59 @@
+# -*- coding: utf-8 -*-
+#
 # Resolution: 1920 × 1080 (FHD)
 # Chrome Only
 
 
-import os, sys, time, subprocess, openpyxl, pyautogui, shutil, datetime
+import os, sys, time, subprocess, openpyxl, pyautogui, shutil, datetime, logging
+from logging.handlers import RotatingFileHandler
 import selenium.common.exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from PyQt5.QtWidgets import *
-from PyQt5 import uic
 from selenium import webdriver
+from subprocess import CREATE_NO_WINDOW  # Only available in Windows
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 from openpyxl_image_loader import SheetImageLoader
 from PyQt5.QtGui import QIntValidator
 from openpyxl.drawing.image import Image
 from urllib import parse
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
+from form import Ui_SettingsWindow
 
-form_class = uic.loadUiType("public/python38/taobao_IS_2/IS_Settings.ui")[0]  # public/python38/taobao_IS_2/
-form_class2 = uic.loadUiType("public/python38/taobao_IS_2/IS_ProgressInfo.ui")[0]
 
-if not os.path.isdir("D:/temp/img/"):
-	os.makedirs("D:/temp/img")
+class Logger:
+	def __init__(self):
+		if not os.path.isdir(os.getcwd() + "\\log\\"):
+			os.makedirs(os.getcwd() + "\\log")
+
+		self.filename = os.getcwd() + '\\log\\' + datetime.datetime.now().strftime('%y%m%d_%H%M') + '.log'
+		self.logger = logging.getLogger()
+		self.logger.setLevel(logging.INFO)
+		self.formatter = logging.Formatter(u'%(asctime)s [%(levelname)s] File "%(filename)s", line %(lineno)d, in %(funcName)s: "%(message)s"')
+		self.file_handler = logging.FileHandler(self.filename)
+
+		log_max_size = 20 * 1024 * 1024  # 20MB
+		log_file_count = 20
+		rotatingFileHandler = logging.handlers.RotatingFileHandler(
+			filename=self.filename,
+			maxBytes=log_max_size,
+			backupCount=log_file_count
+		)
+		rotatingFileHandler.setFormatter(self.formatter)
+		self.logger.addHandler(rotatingFileHandler)
+
+	def debug(self, msg):
+		self.logger.debug(msg)
+
+	def info(self, msg):
+		self.logger.info(msg)
+
+	def error(self, msg):
+		self.logger.error(msg)
 
 
 class WebDriver:
@@ -33,10 +63,16 @@ class WebDriver:
 		option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
 		option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36")
 		# chrome_ver = chromedriver_autoinstaller.get_chrome_version().split('.')[0]
-		self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=option)
+		# self.chrome_service = ChromeService(ChromeDriverManager().install())
+		self.chrome_service = ChromeService("chromedriver.exe")
+		self.chrome_service.creationflags = CREATE_NO_WINDOW
+		self.driver = webdriver.Chrome(service=self.chrome_service, options=option)
 		self.action = ActionChains(self.driver)
 		self.driver.maximize_window()
 		self.driver.implicitly_wait(5)
+		log.info("Webdriver Initiated")
+
+		# TODO: 로그인이 안된 상태에서 검색이 안되므로 프로그램 실행 최초 로그인 필요
 
 		self.try_again_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[1]/div[2]/div"
 		self.login_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[2]/div[2]/div"
@@ -53,18 +89,20 @@ class WebDriver:
 		:return data: json, {response_code: CODE, data: list of [title, price, sales]}
 		"""
 		img_links = Sheet().extract_image(cell, sheet)
+		log.info(f"extracted image from sheet \"{sheet}\" {cell}. filename: {img_links[2]}")
 		self.driver.get(img_links[0])
 		os.remove(img_links[1])
+		log.info(f"removed image file: {img_links[2]}")
 		return self.search(limit)
 
 	def search(self, limit):
 		time.sleep(0.2)
 		click(960, 540, 'r')
 		time.sleep(0.5)
-		click(1000, 680)
+		click(1000, 680)  # y=650
 		time.sleep(4)
-		click(1835, 130)
-		time.sleep(0.5)
+		click(1835, 130)  # x=1850
+		time.sleep(1)
 		self.close_tab_from_front()
 		data = self.taobao_extension(limit)
 		if not data:  # Unsuccessful Search
@@ -77,42 +115,10 @@ class WebDriver:
 				SW.status.setText("Normal")
 				return {"response_code": 916, "data": data}
 
-			"""
-			wait = WebDriverWait(self.driver, 60)
-			wait.until(ec.text_to_be_present_in_element((By.XPATH, self.try_again_button_path), "Try again"))
-
-			login = ec.text_to_be_present_in_element((By.XPATH, self.login_button_path), "Log in")
-			verify = ec.text_to_be_present_in_element((By.XPATH, self.verify_button_path), "Verify")
-			
-			if login and verify:
-				self.login()
-				self.verify_image()
-				try:
-					self.close_tab_from_front(len(self.driver.window_handles))
-					self.driver.quit()
-				except selenium.common.exceptions.InvalidSessionIdException:
-					pass
-
-				self.__init__()
-				self.main(cell, limit)
-				
-				self.driver.find_element(By.XPATH, self.try_again_button_path).click()  # click(1150, 440)
-				time.sleep(5)
-				data = self.analyze(limit)
-
-			elif login:
-				self.login()
-				self.driver.find_element(By.XPATH, self.try_again_button_path).click()
-				time.sleep(5)
-				data = self.analyze(limit)
-
-			elif verify:
-				self.verify_image()
-				self.driver.find_element(By.XPATH, self.try_again_button_path).click()
-				time.sleep(5)
-				data = self.analyze(limit)
-			"""
-			return {"response_code": 1}
+			if data:
+				return {"response_code": 916, "data": data}
+			else:
+				return {"response_code": 1}
 
 		return {"response_code": 916, "data": data}
 
@@ -148,7 +154,10 @@ class WebDriver:
 					if cnt == 1:
 						res = float(res[1:].replace(',', ''))
 					elif cnt == 2:
-						res = int(res[:-3])
+						try:
+							res = int(res[:-3])
+						except ValueError:
+							res = 0
 
 					output.append(res)
 				except selenium.common.exceptions.NoSuchElementException:
@@ -165,31 +174,6 @@ class WebDriver:
 			"""
 
 		return data
-
-	def login(self):
-		click(1150, 540)  # Login
-		time.sleep(1)
-		click(1400, 625)
-		time.sleep(1)
-		self.close_tab_from_back()
-
-	"""
-	def verify_image(self):
-		self.driver.find_element(By.XPATH, self.verify_button_path).click()
-		self.driver.switch_to.window(self.driver.window_handles[1])
-		wait = WebDriverWait(self.driver, 10)
-		wait.until(ec.visibility_of_element_located((By.XPATH, "//*[@id=\"J_UploaderPanel\"]/div[1]/a/div[2]")))
-		self.driver.find_element(By.XPATH, "//*[@id=\"J_UploaderPanel\"]/div[1]/a/div[2]").click()
-		time.sleep(0.5)
-		click(100, 355)
-		time.sleep(0.1)
-		click(300, 200)
-		time.sleep(0.1)
-		pyautogui.press("enter")
-		time.sleep(1)
-		wait.until(ec.visibility_of_element_located((By.XPATH, "//*[@id=\"imgsearch-banner\"]/div/div[1]/div/div/div[1]/div/img")))
-		self.close_tab_from_back()
-	"""
 
 	def add_link(self, data):
 		"""
@@ -213,11 +197,12 @@ class WebDriver:
 			self.driver.find_element(By.CSS_SELECTOR, self.path_analyzer(data[1][i]+1)[0]).click()
 			time.sleep(1)
 			self.driver.switch_to.window(self.driver.window_handles[1])
+			time.sleep(0.2)
 			links.append(self.parse_url(self.driver.current_url))
 			self.close_tab_from_back()
 			img_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({data[1][i]+1}) > div > div.ap-is-link.ap-product-image > img"
 			# imgUrl = self.driver.find_element(By.CSS_SELECTOR, img_path).get_attribute("src")
-			self.download_img(img_path, f"D:/temp/img/{data[0]}_{i}.jpg")
+			self.download_img(img_path, os.getcwd() + rf"\temp\img\{data[0]}_{i}.jpg")
 
 		return data[0], [links[0], links[1], data[2][1], data[3][1], data[2][0], data[3][0]], extra_data
 
@@ -276,12 +261,22 @@ class WebDriver:
 		return title, price, sales
 
 	def close_tab_from_front(self, count=1):
-		tabs = self.driver.window_handles
+		try:
+			tabs = self.driver.window_handles
+		except selenium.common.exceptions.InvalidSessionIdException:
+			log.error("Invalid Session ID")
+			return
 		for i in range(count):
 			self.driver.switch_to.window(tabs[0])
 			self.driver.close()
-			tabs = self.driver.window_handles
-		self.driver.switch_to.window(tabs[0])
+			try:
+				tabs = self.driver.window_handles
+			except selenium.common.exceptions.InvalidSessionIdException:
+				log.error("Invalid Session ID")
+		try:
+			self.driver.switch_to.window(tabs[0])
+		except selenium.common.exceptions.InvalidSessionIdException:
+			log.error("Invalid Session ID")
 
 	def close_tab_from_back(self, count=1):
 		tabs = self.driver.window_handles
@@ -294,6 +289,9 @@ class WebDriver:
 
 class Sheet:
 	def __init__(self):
+		if not os.path.isdir(os.getcwd() + "\\temp\\img\\"):
+			os.makedirs(os.getcwd() + "\\temp\\img")
+
 		self.doc = None
 		self.sheet = None
 		self.ws = None
@@ -320,8 +318,8 @@ class Sheet:
 
 		self.write_extra(extra_data)
 		for (row, info, _) in data:
-			self.ws.add_image(Image(f"D:/temp/img/{row}_0.jpg"), f"H{row}")
-			self.ws.add_image(Image(f"D:/temp/img/{row}_1.jpg"), f"I{row}")
+			self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_0.jpg"), f"H{row}")
+			self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_1.jpg"), f"I{row}")
 			self.ws[f'J{row}'] = info[0]
 			self.ws[f'K{row}'] = info[1]
 			self.ws[f'L{row}'] = f"{info[2]}/{info[4]}"
@@ -329,9 +327,8 @@ class Sheet:
 
 		self.doc.save(SW.t_file_dir + "/" + SW.filename + ".xlsx")
 		SW.e_saved_label.setText(f"Extra_Saved {self.extra}")
-		SW.e_saved_label.repaint()
-		shutil.rmtree("D:/temp/img/")
-		os.makedirs("D:/temp/img")
+		shutil.rmtree(os.getcwd() + "\\temp\\img\\")
+		os.makedirs(os.getcwd() + "\\temp\\img")
 
 	def write_extra(self, data):
 		"""
@@ -341,9 +338,9 @@ class Sheet:
 		"""
 		for data_ in data:
 			for d in data_:
-				self.ws[f'J{SW.end+self.extra}'] = d[0]
-				self.ws[f'L{SW.end+self.extra}'] = f"{d[2]}/{d[3]}"
-				self.ws[f'N{SW.end+self.extra}'] = d[1]
+				self.ws[f'J{SW.end+self.extra+1}'] = d[0]
+				self.ws[f'L{SW.end+self.extra+1}'] = f"{d[2]}/{d[3]}"
+				self.ws[f'N{SW.end+self.extra+1}'] = d[1]
 				self.extra += 1
 
 	@staticmethod
@@ -359,7 +356,7 @@ class Sheet:
 		index = 0
 		extra_data = []
 		for (title, price, sales) in data_list:
-			if sales >= SW.a_i:
+			if sales >= int(SW.min_b_e):
 				extra_data.append([index, title, sales, price])
 			index += 1
 
@@ -371,6 +368,8 @@ class Sheet:
 				sales_list.append(d[2])
 		sorted_list = sorted(sales_list, reverse=True)
 		s_1 = sales_list.index(sorted_list[0])
+		if len(sales_list) == 1:
+			return data[0], [s_1, 0], [data[1][s_1][1], data[1][s_1][2]], [0, 0], extra_data
 		if sorted_list[0] == sorted_list[1]:
 			salesM = sorted_list[0]
 			s_2 = sales_list[sales_list.index(salesM)+1:].index(salesM) + sales_list.index(salesM) + 1
@@ -390,14 +389,17 @@ class Sheet:
 		self.ws['M1'] = "구매수/가격2"
 		self.ws['N1'] = "타오바오 상품명"
 
+		self.doc.save(SW.t_file_dir + "/" + SW.filename + ".xlsx")
+
 	@staticmethod
 	def extract_image(cell, sheet):  # openpyxl_image_loader.SheetImageLoader
 		image_loader = SheetImageLoader(sheet)
 		image = image_loader.get(cell)
-		timestamp = str(datetime.datetime.now().timestamp())
-		image.save(f"D:/temp/img_{timestamp}.jpg")
-		del image, image_loader
-		return f"file:///D:/temp/img_{timestamp}.jpg", f"D:/temp/img_{timestamp}.jpg"
+		ts = str(datetime.datetime.now().timestamp())
+		rgb_image = image.convert("RGB")
+		rgb_image.save(os.getcwd() + rf"\temp\img_{ts}.jpg")
+		del image, rgb_image, image_loader
+		return f"file:///{os.getcwd()}/temp/img_{ts}.jpg", os.getcwd() + rf"\temp\img_{ts}.jpg", f"img_{ts}.jpg"
 
 	@staticmethod
 	def copy_file():
@@ -411,14 +413,12 @@ def click(x, y, rl='l'):
 		pyautogui.click(x, y)
 
 
-"""
 def timestamp():
-	return f"[{str(datetime.datetime.now())[:len(str(datetime.datetime.now())) - 7]}] "
-"""
+	return f"[{str(datetime.datetime.now())[:len(str(datetime.datetime.now())) - 7]}]"
 
 
 # noinspection PyArgumentList
-class SettingsWindow(QMainWindow, form_class):
+class SettingsWindow(QMainWindow, Ui_SettingsWindow):
 	def __init__(self):
 		super().__init__()
 		self.setupUi(self)
@@ -429,7 +429,7 @@ class SettingsWindow(QMainWindow, form_class):
 		self.e_saved = 0
 		self.min_p = 0
 		self.min_b = 0
-		self.min_b_e = 0
+		self.min_b_e = 200
 		self.p_i = 10
 		self.a_i = 30
 		self.start_row = 2
@@ -539,6 +539,9 @@ class SettingsWindow(QMainWindow, form_class):
 	def warning_error02(self):
 		QMessageBox.warning(self, "[E02] FileError", "No Target Directory Selected!")
 
+	def warning_error03(self, ts):
+		QMessageBox.warning(self, "[E03] UnknownError", f"Unknown Error occurred at [{ts}]")
+
 
 class Worker(QObject):
 	finished = pyqtSignal()
@@ -548,16 +551,20 @@ class Worker(QObject):
 		self.St = Sheet()
 		self.WD = None
 		self.accumulated_data = []
-		self.skip = False
 
 	def run(self):
 		cycles = 0
 		for rows in range(int(SW.start_row), SW.end + 1, 8):
-			self.main(rows)
+			res = self.main(rows)
+			if res["response_code"] == 2:
+				# noinspection PyUnresolvedReferences
+				self.finished.emit()
+				return
+
 			cycles += 1
 
 			if cycles % 4 == 0:
-				time.sleep(180)
+				time.sleep(300)
 
 		skipped_rows = []
 
@@ -582,14 +589,18 @@ class Worker(QObject):
 		self.WD = WebDriver()
 		self.accumulated_data = []
 		for row in range(rows, rows + 8):
-			self.wd_data(row)
-
+			res = self.wd_data(row)
+			if res["response_code"] == 2:
+				log.error("3 consecutive skips. return error")
+				return res
 		self.St.write(self.accumulated_data)
+		log.info(f"Saved {len(self.accumulated_data)} items")
 		SW.saved_label.setText(f"Saved {SW.now}/{SW.end - 1}")
 
 		self.WD.close_driver()
 		del self.WD
 		time.sleep(2)
+		return {"response_code": 916}
 
 	def wd_data(self, row):
 		d = self.WD.main(f"B{row}", SW.p_i, self.St.sheet)
@@ -606,22 +617,28 @@ class Worker(QObject):
 			SW.status.setStyleSheet("Color : green")
 			SW.status.setText("Normal")
 			SW.consecutive_skips += 1
-			if SW.consecutive_skips > 3:  # TODO: if it stops again, it has to raise error and save SW.now to the variable
+			if SW.consecutive_skips == 2:
 				time.sleep(180)
+			if SW.consecutive_skips > 2:
+				SW.startrow_lb.setText(str(int(SW.now)-3))
+				SW.start_row = int(SW.now) - 3
+				SW.warning_error03(timestamp())
+				return {"response_code": 2}
 
-			return
+			return {"response_code": 3}
 
 		data = self.WD.add_link(self.St.find_sales_high([row, d["data"]], SW.min_p, SW.min_b))
 		self.WD.close_extension()
 		SW.now += 1
 		SW.current_label.setText(f"Current {SW.now}/{SW.end - 1}")
-		SW.current_label.repaint()
 		self.accumulated_data.append(data)
 		SW.consecutive_skips = 0
+		return {"response_code": 916}
 
 
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	SW = SettingsWindow()
+	log = Logger()
 	SW.show()
 	app.exec_()
