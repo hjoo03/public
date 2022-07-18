@@ -232,26 +232,6 @@ class WebDriver:
 		else:
 			return url
 
-	"""
-	@staticmethod
-	def download_img(url, file_path):
-		res = requests.get(url, stream=True)
-		with open(file_path, "wb") as file:
-			res.raw.decode_content = True
-			shutil.copyfileobj(res.raw, file)
-		del res
-	"""
-
-	"""
-	@staticmethod
-	def xpath_analyzer(item_no):
-		base_xpath = f"//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[1]/div[2]/div/div/div/div/div[{item_no}]/div/div[2]"
-		price = base_xpath + "/div[1]"
-		sales = base_xpath + "/div[5]"
-		title = base_xpath + "/div[3]"
-		location = base_xpath[:-7] + "/div[4]/div[2]"
-		return title, price, sales, location
-	"""
 	@staticmethod
 	def path_analyzer(item_no):
 		base_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({item_no}) > div > "
@@ -273,6 +253,7 @@ class WebDriver:
 				tabs = self.driver.window_handles
 			except selenium.common.exceptions.InvalidSessionIdException:
 				log.error("Invalid Session ID")
+				return
 		try:
 			self.driver.switch_to.window(tabs[0])
 		except selenium.common.exceptions.InvalidSessionIdException:
@@ -344,7 +325,7 @@ class Sheet:
 				self.extra += 1
 
 	@staticmethod
-	def find_sales_high(data, min_price, min_sales):
+	def find_sales_high(data, min_price, min_sales) -> tuple:
 		"""
 		analyzes data
 		:param data: list, [row, list of [title, price, sales]]
