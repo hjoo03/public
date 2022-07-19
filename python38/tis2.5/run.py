@@ -16,8 +16,6 @@ from selenium import webdriver
 from subprocess import CREATE_NO_WINDOW  # Only available in Windows
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
-# from webdriver_manager.chrome import ChromeDriverManager
-from openpyxl_image_loader import SheetImageLoader
 from PyQt5.QtGui import QIntValidator
 from openpyxl.drawing.image import Image
 from urllib import parse
@@ -36,7 +34,7 @@ class Logger:
         self.formatter = logging.Formatter(u'%(asctime)s [%(levelname)s] File "%(filename)s", line %(lineno)d, in %(funcName)s: "%(message)s"')
         self.file_handler = logging.FileHandler(self.filename)
 
-        log_max_size = 20 * 1024 * 1024  # 20MB
+        log_max_size = 10 * 1024 * 1024  # 10MB
         log_file_count = 20
         rotatingFileHandler = logging.handlers.RotatingFileHandler(
             filename=self.filename,
@@ -62,8 +60,7 @@ class WebDriver:
         option = Options()
         option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36")
-        # chrome_ver = chromedriver_autoinstaller.get_chrome_version().split('.')[0]
-        # self.chrome_service = ChromeService(ChromeDriverManager().install())
+
         if getattr(sys, 'frozen', False):
             chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
             self.chrome_service = ChromeService(chromedriver_path)
@@ -82,42 +79,25 @@ class WebDriver:
         time.sleep(5)
         log.info("Login Success")"""
 
+        self.search_button_path = "/html/body/div/div/div[1]/div[1]/div[1]"
         self.try_again_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[1]/div[2]/div"
         self.login_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[2]/div[2]/div"
         self.verify_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[3]/div[2]/div"
-        self.search_button_path = f"//*[@id=\"{SW.google_lens_code}\"]/div[4]/div/div[1]/div[1]/div[1]/div[1]"
 
     def main(self, cell, limit, sheet):
         """
-        opens image file at the driver
+        get request image file at the driver
         then searches it on taobao
         :param cell: str, target cell
         :param limit: int, limit of items per image
         :param sheet: Workbook.Sheet(), for preventing I/O on closed file
         :return data: json, {response_code: CODE, data: list of [title, price, sales]}
         """
-        img_links = Sheet().extract_image(cell, sheet)
-        log.info(f"extracted image from {sheet} [{cell}]. filename: {img_links[2]}")
-        self.driver.get(img_links[0])
-        os.remove(img_links[1])
-        log.info(f"removed image file: {img_links[2]}")
+        img_link = sheet[cell].value
+        self.driver.get(img_link)
         return self.search(limit)
 
     def search(self, limit):
-        time.sleep(0.2)
-        click(960, 540, 'r')
-        time.sleep(0.5)
-        if SW.res == 0:
-            click(1000, 680)
-        else:
-            click(1000, 650)
-        time.sleep(4)
-        if SW.res == 0:
-            click(1835, 130)
-        else:
-            click(1850, 130)
-        time.sleep(1)
-        self.close_tab_from_front()
         data = self.taobao_extension(limit)
         if not data:  # Unsuccessful Search
             SW.status.setStyleSheet("Color : red")
@@ -137,15 +117,15 @@ class WebDriver:
         return {"response_code": 916, "data": data}
 
     def taobao_extension(self, limit):
-        self.action.move_to_element(self.driver.find_element(By.XPATH, f"//*[@id=\"{SW.google_lens_code}\"]/div[3]/c-wiz/div/c-wiz/div/div[1]/div/div[2]/div/div/div/div/div[4]")).perform()
-        time.sleep(0.15)
+        self.action.move_to_element(self.driver.find_element(By.XPATH, f"/html/body/img")).perform()
+        time.sleep(0.05)
         try:
             self.driver.find_element(By.XPATH, self.search_button_path).click()
         except selenium.common.exceptions.ElementNotInteractableException:
             print("DO NOT Move Mouse Pointer!! Retrying...")
-            time.sleep(0.5)
-            self.action.move_to_element(self.driver.find_element(By.XPATH, f"//*[@id=\"{SW.google_lens_code}\"]/div[3]/c-wiz/div/c-wiz/div/div[1]/div/div[2]/div/div/div/div/div[4]")).perform()
-            time.sleep(0.15)
+            time.sleep(0.2)
+            self.action.move_to_element(self.driver.find_element(By.XPATH, f"/html/body/img")).perform()
+            time.sleep(0.05)
             self.driver.find_element(By.XPATH, self.search_button_path).click()
         try:
             wait = WebDriverWait(self.driver, 15)
@@ -183,10 +163,6 @@ class WebDriver:
                 data.append(output)
             if end_of_list:
                 break
-            """
-            if i % 6 == 0:
-                pyautogui.scroll(-800, x=700, y=600)
-            """
 
         return data
 
@@ -222,7 +198,7 @@ class WebDriver:
         return data[0], [links[0], links[1], data[2][1], data[3][1], data[2][0], data[3][0]], extra_data
 
     def close_extension(self):
-        close_button = f"//*[@id=\"{SW.google_lens_code}\"]/div[4]/div/div[1]/div[1]/div/div[3]/div/div[3]/div[1]"
+        close_button = f"/html/body/div/div/div[1]/div[1]/div/div[3]/div/div[3]/div[1]"
         self.driver.find_element(By.XPATH, close_button).click()
         time.sleep(0.5)
 
@@ -292,6 +268,8 @@ class Sheet:
         self.sheet = None
         self.ws = None
         self.extra = 0
+        self.this_sheet_items = 0
+        self.items = 0
 
     def setup_read_sheet(self, file_directory, sheet_name):
         self.doc = openpyxl.load_workbook(file_directory)
@@ -304,24 +282,29 @@ class Sheet:
     def write(self, data):
         """
         writes main data in the sheet
-        :param data: tuple, list of (row, [link1, "2, sales1, "2, price1, "2], extra_data)
+        :param data: dict, {skips: skipped rows, data: list of (row, [link1, "2, sales1, "2, price1, "2], extra_data)}
         :return:
         """
         self.setup_target_sheet()
         extra_data = []
-        for item in data:
+        for item in data["data"]:
             extra_data.append(item[2])
-
         self.write_extra(extra_data)
-        for (row, info, _) in data:
-            self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_0.jpg"), f"H{row}")
-            self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_1.jpg"), f"I{row}")
-            self.ws[f'J{row}'] = info[0]
-            self.ws[f'K{row}'] = info[1]
-            self.ws[f'L{row}'] = f"{info[2]}/{info[4]}"
-            self.ws[f'M{row}'] = f"{info[3]}/{info[5]}"
+        for (row, info, _) in data["data"]:
+            self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_0.jpg"), f"I{row}")
+            self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_1.jpg"), f"J{row}")
+            self.ws[f'K{row}'].hyperlink = info[0]
+            self.ws[f'L{row}'].hyperlink = info[1]
+            self.ws[f'K{row}'].value = info[0]
+            self.ws[f'L{row}'].value = info[1]
+            self.ws[f'K{row}'].style = info[0]
+            self.ws[f'L{row}'].style = info[1]
+            self.ws[f'M{row}'] = f"{info[2]}/{info[4]}"
+            self.ws[f'N{row}'] = f"{info[3]}/{info[5]}"
+            self.items += 1
 
-        self.doc.save(SW.t_file_dir + "/" + SW.filename + ".xlsx")
+        self.doc.save(SW.t_file_dir + "\\" + SW.filename + f"_{(self.items%100+1):02}.xlsx")
+        print(f"last saved: {self.items+1}")
         SW.e_saved_label.setText(f"Extra_Saved {self.extra}")
         shutil.rmtree(os.getcwd() + "\\temp\\img\\")
         os.makedirs(os.getcwd() + "\\temp\\img")
@@ -334,9 +317,9 @@ class Sheet:
         """
         for data_ in data:
             for d in data_:
-                self.ws[f'J{SW.end+self.extra+1}'] = d[0]
-                self.ws[f'L{SW.end+self.extra+1}'] = f"{d[2]}/{d[3]}"
-                self.ws[f'N{SW.end+self.extra+1}'] = d[1]
+                self.ws[f'K{SW.end+self.extra+1}'] = d[0]
+                self.ws[f'M{SW.end+self.extra+1}'] = f"{d[2]}/{d[3]}"
+                self.ws[f'O{SW.end+self.extra+1}'] = d[1]
                 self.extra += 1
 
     @staticmethod
@@ -377,25 +360,15 @@ class Sheet:
     def setup_target_sheet_init(self):
         self.doc = openpyxl.load_workbook(SW.t_file_dir + "/" + SW.filename + ".xlsx")
         self.ws = self.doc.active
-        self.ws['H1'] = "사진1"
-        self.ws['I1'] = "사진2"
-        self.ws['J1'] = "링크1"
-        self.ws['K1'] = "링크2"
-        self.ws['L1'] = "구매수/가격1"
-        self.ws['M1'] = "구매수/가격2"
-        self.ws['N1'] = "타오바오 상품명"
+        self.ws['I1'] = "사진1"
+        self.ws['J1'] = "사진2"
+        self.ws['K1'] = "링크1"
+        self.ws['L1'] = "링크2"
+        self.ws['M1'] = "구매수/가격1"
+        self.ws['N1'] = "구매수/가격2"
+        self.ws['O1'] = "타오바오 상품명"
 
         self.doc.save(SW.t_file_dir + "/" + SW.filename + ".xlsx")
-
-    @staticmethod
-    def extract_image(cell, sheet):  # openpyxl_image_loader.SheetImageLoader
-        image_loader = SheetImageLoader(sheet)
-        image = image_loader.get(cell)
-        ts = str(datetime.datetime.now().timestamp())
-        rgb_image = image.convert("RGB")
-        rgb_image.save(os.getcwd() + rf"\temp\img_{ts}.jpg")
-        del image, rgb_image, image_loader
-        return f"file:///{os.getcwd()}/temp/img_{ts}.jpg", os.getcwd() + rf"\temp\img_{ts}.jpg", f"img_{ts}.jpg"
 
     @staticmethod
     def copy_file():
@@ -431,8 +404,6 @@ class SettingsWindow(QMainWindow, Ui_SettingsWindow):
         self.start_row = 2
         self.delay = 200
         self.savef = 5
-        self.res = 0
-        self.google_lens_code = "yDmH0d"
         self.minprice.setValidator(self.onlyInt)
         self.minbuy.setValidator(self.onlyInt)
         self.minbuy_extra.setValidator(self.onlyInt)
@@ -450,9 +421,6 @@ class SettingsWindow(QMainWindow, Ui_SettingsWindow):
         self.filename_lb.textChanged.connect(self.set_filename)
         self.delayt.textChanged.connect(self.sd)
         self.save.textChanged.connect(self.ss)
-        self.sysres.currentTextChanged.connect(self.sr)
-
-        self.googlens.textChanged.connect(self.set_goog_lens_code)
 
         self.status.setStyleSheet("Color : green")
         self.pushButton.clicked.connect(self.start)  # button triggers start()
@@ -505,6 +473,9 @@ class SettingsWindow(QMainWindow, Ui_SettingsWindow):
         )[0]
         self.file_label.setText(self.o_file_dir)
         self.file_label.repaint()
+        self.filename_lb.setText(self.o_file_dir[self.o_file_dir.rindex('/')+1:self.o_file_dir.rindex('.xlsx')] + "_result")
+        self.filename_lb.repaint()
+        self.filename = self.o_file_dir[self.o_file_dir.rindex('/')+1:self.o_file_dir.rindex('.xlsx')] + "_result"
 
     def select_dir(self):
         self.t_file_dir = QFileDialog.getExistingDirectory(
@@ -538,14 +509,8 @@ class SettingsWindow(QMainWindow, Ui_SettingsWindow):
     def ss(self):
         self.savef = self.save.text()
 
-    def sr(self):
-        self.res = self.sysres.currentIndex()
-
     def set_filename(self):
         self.filename = self.filename_lb.text()
-
-    def set_goog_lens_code(self):
-        self.google_lens_code = self.googlens.text()
 
     def warning_error01(self):
         QMessageBox.warning(self, "[E01] FileError", "No File Selected!")
@@ -564,7 +529,8 @@ class Worker(QObject):
         super().__init__()
         self.St = Sheet()
         self.WD = None
-        self.accumulated_data = []
+        self.accumulated_data = {"skips": [], "data": []}
+        self.deleted = 0
 
     def run(self):
         cycles = 0
@@ -580,44 +546,26 @@ class Worker(QObject):
             if cycles % 4 == 0:
                 time.sleep(int(SW.delay))
 
-        skipped_rows = []
-
-        sk_r = []
-        for i in range(len(SW.skipped)):
-            sk_r.append(SW.skipped[i])
-            if i % int(SW.savef) == 0:
-                skipped_rows.append(sk_r)
-                sk_r = []
-
-        cycles = 0
-        for rows in skipped_rows:
-            self.main(rows)
-            cycles += 1
-
-            if cycles % 4 == 0:
-                time.sleep(int(SW.delay))
-
+        os.remove(SW.t_file_dir + "/" + SW.filename + ".xlsx")
         # noinspection PyUnresolvedReferences
         self.finished.emit()
 
     def main(self, rows):
         self.WD = WebDriver()
-        self.accumulated_data = []
-        if type(rows) == int:
-            for row in range(rows, rows + int(SW.savef)):
-                res = self.wd_data(row)
-                if res["response_code"] == 2:
-                    log.error("3 consecutive skips. return error")
-                    return res
-        else:
-            assert type(rows) == list
-            for row in rows:
-                res = self.wd_data(row)
-                if res["response_code"] == 2:
-                    log.error("3 consecutive skips. return error")
-                    return res
+        self.accumulated_data = {"skips": [], "data": []}
+
+        for row in range(rows, rows + int(SW.savef)):
+            row_ = row - self.deleted
+            res = self.wd_data(row_)
+            if res["response_code"] == 2:
+                log.error("3 consecutive skips. return error")
+                return res
+            elif res["response_code"] == 3:
+                self.St.ws.delete_rows(row_, 1)
+                self.deleted += 1
+
         self.St.write(self.accumulated_data)
-        log.info(f"Saved {len(self.accumulated_data)} items")
+        log.info(f"Saved {len(self.accumulated_data['data'])} items")
         SW.saved_label.setText(f"Saved {SW.now}/{SW.end - 1}")
 
         self.WD.close_driver()
@@ -628,15 +576,6 @@ class Worker(QObject):
     def wd_data(self, row):
         d = self.WD.main(f"B{row}", SW.p_i, self.St.sheet)
         if d["response_code"] != 916:
-            """
-            self.WD.close_driver()
-            time.sleep(1)
-            self.St.setup_read_sheet(SW.o_file_dir, "export")  # Excel file dir, Sheet name
-            self.WD = WebDriver()
-            d = self.WD.main(f"B{row}", SW.p_i, self.St.sheet)
-            assert d["response_code"] == 916
-            """
-            SW.skipped.append(row)
             SW.status.setStyleSheet("Color : green")
             SW.status.setText("Normal")
             SW.consecutive_skips += 1
@@ -654,7 +593,7 @@ class Worker(QObject):
         self.WD.close_extension()
         SW.now += 1
         SW.current_label.setText(f"Current {SW.now}/{SW.end - 1}")
-        self.accumulated_data.append(data)
+        self.accumulated_data["data"].append(data)
         SW.consecutive_skips = 0
         return {"response_code": 916}
 

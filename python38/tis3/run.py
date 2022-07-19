@@ -1,155 +1,235 @@
 # -*- coding: utf-8 -*-
-# tis3/run.py TODO: Incomplete
+# tis/run.py
 
-import sys, time
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QThread, QObject, pyqtSignal
+import os, sys, datetime, time
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
 
-# local imports
+# Local Imports
+from form import Window
+from webdriver import WebDriver, Signal
 from logger import Logger
-from webdriver import WebDriver
 from excel import Excel
-from gui import MainWindow
 
 
-def start(ofd, tfd, fn, mp, ms, mse, pi, ai, sr, glc) -> None:
+class MainWindow(QMainWindow, Window):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.onlyInt = QIntValidator()
+        self.o_file_dir = ''
+        self.t_file_dir = ''
+        self.filename = "file"
+        self.e_saved = 0
+        self.min_p = 0
+        self.min_b = 0
+        self.min_b_e = 200
+        self.p_i = 30
+        self.a_i = 10
+        self.start_row = 2
+        self.delay = 200
+        self.splits = 100
+        self.minprice.setValidator(self.onlyInt)
+        self.minbuy.setValidator(self.onlyInt)
+        self.minbuy_extra.setValidator(self.onlyInt)
+        self.peritem.setValidator(self.onlyInt)
+        self.a_item.setValidator(self.onlyInt)
+        self.startrow_lb.setValidator(self.onlyInt)
+        self.delayt.setValidator(self.onlyInt)
+        self.split_lb.setValidator(self.onlyInt)
+        self.minprice.textChanged.connect(self.s_m1_p)
+        self.minbuy.textChanged.connect(self.s_m1_b)
+        self.minbuy_extra.textChanged.connect(self.s_m_e)
+        self.peritem.textChanged.connect(self.s_p_i)
+        self.a_item.textChanged.connect(self.s_a_i)
+        self.startrow_lb.textChanged.connect(self.s_sr)
+        self.filename_lb.textChanged.connect(self.set_filename)
+        self.delayt.textChanged.connect(self.sd)
+        self.split_lb.textChanged.connect(self.ss)
+
+        self.status.setStyleSheet("Color : green")
+        self.pushButton.clicked.connect(self.start)  # button triggers start()
+        self.file_button.clicked.connect(self.select_file)
+        self.file_button_2.clicked.connect(self.select_dir)
+
+        self.thread, self.worker = None, None
+        self.total_items = 0
+        self.current_row = 0
+        self.skipped = []
+        self.consecutive_skips = 0
+
+    def start(self) -> None:
+        self.thread = QThread()
+        self.worker = Worker()
+        self.worker.moveToThread(self.thread)
+
+        self.thread.started.connect(self.worker.run)
+        # noinspection PyUnresolvedReferences
+        self.worker.finished.connect(self.thread.quit)
+        # noinspection PyUnresolvedReferences
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        if not self.o_file_dir:
+            self.warning_error01()
+            return
+        if not self.t_file_dir:
+            self.warning_error02()
+            return
+
+        Excel.set_directory(self.o_file_dir, self.t_file_dir, self.filename)
+
+        s = int(self.start_row)
+        while True:
+            if not Excel.read_sheet[f'A{s}'].value and Excel.read_sheet[f'A{s}'].value != 0:
+                self.total_items = s - int(self.start_row)
+                break
+            s += 1
+        Excel.index_range = range(self.start_row, self.start_row + self.total_items)
+        self.current_label.setText(f"Current {self.current_row}/{self.total_items}")
+        self.thread.start()
+
+    def select_file(self):
+        file_filter = "Excel File (*.xlsx)"
+        self.o_file_dir = QFileDialog.getOpenFileName(
+            parent=self,
+            caption="Select an Excel File",
+            directory=os.getcwd(),
+            filter=file_filter,
+            initialFilter=file_filter
+        )[0]
+        self.file_label.setText(self.o_file_dir)
+        self.file_label.repaint()
+        self.filename_lb.setText(self.o_file_dir[self.o_file_dir.rindex('/') + 1:self.o_file_dir.rindex('.xlsx')] + "_result")
+        self.filename_lb.repaint()
+        self.filename = self.o_file_dir[self.o_file_dir.rindex('/') + 1:self.o_file_dir.rindex('.xlsx')] + "_result"
+
+    def select_dir(self):
+        self.t_file_dir = QFileDialog.getExistingDirectory(
+            parent=self,
+            caption="Select a folder"
+        )
+        self.file_label_2.setText(self.t_file_dir)
+        self.file_label_2.repaint()
+
+    def s_m1_p(self):
+        self.min_p = self.minprice.text()
+
+    def s_m1_b(self):
+        self.min_b = self.minbuy.text()
+
+    def s_m_e(self):
+        self.min_b_e = self.minbuy_extra.text()
+
+    def s_p_i(self):
+        self.p_i = self.peritem.text()
+
+    def s_a_i(self):
+        self.a_i = self.a_item.text()
+
+    def s_sr(self):
+        self.start_row = self.startrow_lb.text()
+
+    def sd(self):
+        self.delay = self.delayt.text()
+
+    def ss(self):
+        self.splits = self.split_lb.text()
+
+    def set_filename(self):
+        self.filename = self.filename_lb.text()
+
+    def warning_error01(self):
+        QMessageBox.warning(self, "[E01] FileError", "No File Selected!")
+
+    def warning_error02(self):
+        QMessageBox.warning(self, "[E02] FileError", "No Target Directory Selected!")
+
+    def warning_error03(self, ts):
+        QMessageBox.warning(self, "[E03] UnknownError", f"Unknown Error occurred at [{ts}]")
+
+    @pyqtSlot(str, str)
+    def set_status(self, color: str, msg: str):
+        self.status.setStyleSheet(f"Color : {color}")
+        self.status.setText(msg)
+
     """
-    this method only runs once
-    :param ofd: str - original file directory
-    :param tfd: str - target file directory
-    :param fn: str - filename
-    :param mp: int - minimum price
-    :param ms: int - minimum sells
-    :param mse: int - minimum extra sells
-    :param pi: int - data per item
-    :param ai: int - analyzed data per item
-    :param sr: int - start row
-    :param glc: str - google lens code
-    :return:
+    @pyqtSlot(str, int)
+    def search_status(self, label: str, number: int):
+        if label == 'e':
+            self.e_saved_label.setText(f"Extra_Saved {number}")
+        elif label == 'c':
+            self.current_label.setText(f"Current {number}/{self.total_items}")
     """
-    # Setup Threads
-    thread = QThread()
-    worker = Worker(Excel, fn, mp, ms, mse, pi, ai, sr, glc)
-    worker.moveToThread(thread)
-    thread.started.connect(worker.run)
-    worker.finished.connect(thread.quit)
-    worker.finished.connect(worker.deleteLater)
-    thread.finished.connect(thread.deleteLater)
-
-    # Check Excel File
-    if not ofd:
-        MW.warning_error01()
-        return
-    if not tfd:
-        MW.warning_error02()
-        return
-
-    # Read File
-    Excel.setup_read_sheet(ofd, "export")
-    Excel.copy_file()
-    s = int(sr)
-    while True:
-        if not Excel.sheet[f'A{s}'].value and Excel.sheet[f'A{s}'].value != 0:
-            end = s - 1
-            break
-        s += 1
-    MW.saved_label.setText(f"Saved {MW.now}/{end - 1}")
-    Excel.setup_target_sheet_init()
-    thread.start()
 
 
 class Worker(QObject):
     finished = pyqtSignal()
 
-    def __init__(self, E, fn, mp, ms, mse, pi, ai, sr, glc):
+    def __init__(self):
         super().__init__()
         self.WD = None
-        self.accumulated_data = []
-        self.St = E
-        self.fn, self.mp, self.ms, self.mse, self.pi, self.ai, self.sr, self.glc = fn, mp, ms, mse, pi, ai, sr, glc
+        self.signal = Signal()
 
     def run(self):
-        cycles = 0
-        for rows in range(int(self.sr), MW.end + 1, 8):
-            res = self.main(rows)
+        for cnt, row in enumerate(range(int(MW.start_row), int(MW.start_row) + MW.total_items), start=1):
+            if cnt % 5 == 1:
+                try:
+                    self.WD.close_driver()
+                    del self.WD
+                except AttributeError:
+                    pass
+                self.WD = WebDriver()
+                self.signal.signal_status.connect(MW.set_status)
+            res = self.main(row)
             if res["response_code"] == 2:
                 # noinspection PyUnresolvedReferences
                 self.finished.emit()
                 return
 
-            cycles += 1
-
-            if cycles % 4 == 0:
-                time.sleep(200)
-
-        skipped_rows = []
-
-        sk_r = []
-        for i in range(len(SW.skipped)):
-            sk_r.append(SW.skipped[i])
-            if i % 7 == 0:
-                skipped_rows.append(sk_r)
-                sk_r = []
-
-        cycles = 0
-        for rows in skipped_rows:
-            self.main(rows)
-            cycles += 1
-
-            if cycles % 4 == 0:
-                time.sleep(180)
-
         # noinspection PyUnresolvedReferences
         self.finished.emit()
 
-    def main(self, rows):
-        self.WD = WebDriver(self.glc)
-        self.accumulated_data = []
-        for row in range(rows, rows + 8):
-            res = self.wd_data(row)
-            if res["response_code"] == 2:
-                log.error("3 consecutive skips. return error")
-                return res
-        self.St.write(self.accumulated_data)
-        log.info(f"Saved {len(self.accumulated_data)} items")
-        SW.saved_label.setText(f"Saved {SW.now}/{SW.end - 1}")
+    def main(self, row) -> dict:
+        res = self.wd_data(row)
+        if res["response_code"] == 2:
+            log.error("3 consecutive skips. return error")
+            return res
 
-        self.WD.close_driver()
-        del self.WD
-        time.sleep(2)
-        return {"response_code": 916}
+        return {"response_code": 100}
 
     def wd_data(self, row):
-        d = self.WD.main(f"B{row}", SW.p_i, self.St.sheet)
-        if d["response_code"] != 916:
-            SW.skipped.append(row)
-            SW.status.setStyleSheet("Color : green")
-            SW.status.setText("Normal")
-            SW.consecutive_skips += 1
-            if SW.consecutive_skips == 2:
-                time.sleep(180)
-            if SW.consecutive_skips > 2:
-                SW.startrow_lb.setText(str(int(SW.now) - 3))
-                SW.start_row = int(SW.now) - 3
-                SW.warning_error03(timestamp())
+        d = self.WD.main(row, MW.p_i, Excel.read_sheet, Excel.row_to_index(row), MW.min_p, MW.min_b, MW.min_b_e, MW.a_i)
+        if d["response_code"] != 100:
+            Excel.skipped_list.append(d["index"])
+            Excel.skips += 1
+            MW.set_status("green", "Normal")
+            MW.consecutive_skips += 1
+            if MW.consecutive_skips == 2:
+                time.sleep(int(MW.delay))
+            if MW.consecutive_skips > 2:
+                MW.startrow_lb.setText(str(row-3))
+                MW.start_row = int(row) - 3
+                MW.warning_error03(timestamp())
                 return {"response_code": 2}
 
-            return {"response_code": 3}
+            return {"response_code": 1}
 
-        data = self.WD.add_link(self.St.find_sales_high([row, d["data"]], SW.min_p, SW.min_b))
-        self.WD.close_extension()
-        SW.now += 1
-        SW.current_label.setText(f"Current {SW.now}/{SW.end - 1}")
-        self.accumulated_data.append(data)
-        SW.consecutive_skips = 0
-        return {"response_code": 916}
+        Excel.write(d["data"], row, int(MW.splits))
+        MW.current_label.setText(f"Current {Excel.finished_items}/{MW.total_items}")
+        MW.e_saved_label.setText(f"Extra_Saved {Excel.extra}")
+        MW.consecutive_skips = 0
+        return {"response_code": 100}
+
+
+def timestamp() -> str:
+    return f"[{str(datetime.datetime.now())[:len(str(datetime.datetime.now())) - 7]}]"
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     MW = MainWindow()
-    log = Logger()
-    WD = WebDriver()
+    log = Logger().logger
     Excel = Excel()
     MW.show()
     app.exec_()

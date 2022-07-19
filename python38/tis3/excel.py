@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # tis/excel.py
 
-import os, openpyxl, shutil, datetime
+import os, openpyxl, shutil
 from openpyxl.drawing.image import Image
 from openpyxl_image_loader import SheetImageLoader
 
@@ -12,114 +12,138 @@ class Excel:
             os.makedirs(os.getcwd() + "\\temp\\img")
 
         self.doc = None
-        self.sheet = None
         self.ws = None
+        self.read_sheet = None
+        self.ex_exists = False
         self.extra = 0
+        self.finished_items = 0
+        self.current_file = 1
+        self.in_directory = ''
+        self.out_directory = ''
+        self.filename = ''
+        self.index_range = []
+        self.skips = 0
+        self.skipped_list = []
 
-    def setup_read_sheet(self, file_directory, sheet_name):
-        self.doc = openpyxl.load_workbook(file_directory)
-        self.sheet = self.doc[sheet_name]
+    def set_directory(self, in_dir, out_dir, filename):
+        self.in_directory = in_dir
+        self.out_directory = out_dir + '\\'
+        self.filename = filename
+        self.read_sheet = openpyxl.load_workbook(self.in_directory).active
+        self.create_template()
 
-    def setup_target_sheet(self):
-        self.doc = openpyxl.load_workbook(SW.t_file_dir + "/" + SW.filename + ".xlsx")
+    def setup_sheet(self):
+        self.doc = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
         self.ws = self.doc.active
 
-    def write(self, data):
+    def setup_extra_sheet(self):
+        self.doc = openpyxl.load_workbook(self.out_directory + self.filename + "_high-sales.xlsx")
+        self.ws = self.doc.active
+
+    def setup_new_sheet(self):
+        self.doc = openpyxl.Workbook()
+        self.ws = self.doc.active
+
+    def write(self, data: dict, last_row: int, split: int):
         """
         writes main data in the sheet
-        :param data: tuple, list of (row, [link1, "2, sales1, "2, price1, "2], extra_data)
-        :return:
+        :param split: int
+        :param last_row: int, for splitting files
+        :param data: tuple, (index, [link1, "2, sales1, price1, sales2, price2], extra_data)
+        :return index: int
         """
-        self.setup_target_sheet()
-        extra_data = []
-        for item in data:
-            extra_data.append(item[2])
-
+        extra_data = [data[2]]
         self.write_extra(extra_data)
-        for (row, info, _) in data:
-            self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_0.jpg"), f"H{row}")
-            self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{row}_1.jpg"), f"I{row}")
-            self.ws[f'J{row}'] = info[0]
-            self.ws[f'K{row}'] = info[1]
-            self.ws[f'L{row}'] = f"{info[2]}/{info[4]}"
-            self.ws[f'M{row}'] = f"{info[3]}/{info[5]}"
 
-        self.doc.save(SW.t_file_dir + "/" + SW.filename + ".xlsx")
-        SW.e_saved_label.setText(f"Extra_Saved {self.extra}")
+        if self.finished_items % split == 0 and self.finished_items != 0:
+            self.setup_sheet()
+            self.ws.delete_rows(2, last_row - 1)
+            self.current_file += 1
+            self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+
+        if self.finished_items % 5 == 0:
+            self.setup_sheet()
+            for row in range(2, last_row):
+                i = self.ws[f'A{row}'].value
+                if i in self.skipped_list:
+                    self.ws.delete_rows(row, 1)
+            self.skips = 0
+
+        self.setup_sheet()
+        index = data[0]
+        info = data[1]
+        row = self.finished_items % split + 2 + self.skips
+        self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{index}_0.jpg"), f"I{row}")
+        self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{index}_1.jpg"), f"J{row}")
+        self.ws[f'K{row}'].hyperlink = info[0]
+        self.ws[f'L{row}'].hyperlink = info[1]
+        self.ws[f'K{row}'].value = info[0]
+        self.ws[f'L{row}'].value = info[1]
+        self.ws[f'K{row}'].style = "Hyperlink"
+        self.ws[f'L{row}'].style = "Hyperlink"
+        self.ws[f'M{row}'] = f"{info[2]}/{info[3]}"
+        self.ws[f'N{row}'] = f"{info[4]}/{info[5]}"
+        self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+        self.finished_items += 1
         shutil.rmtree(os.getcwd() + "\\temp\\img\\")
         os.makedirs(os.getcwd() + "\\temp\\img")
+
+        return index
 
     def write_extra(self, data):
         """
         writes extra data in the sheet
-        :param data: list, list of [link, title, sales, price]
+        :param data: list, [list of [link, title, sales, price]]
         :return:
         """
+        if not self.ex_exists:
+            self.create_extra_sheet()
+        self.setup_extra_sheet()
+
         for data_ in data:
             for d in data_:
-                self.ws[f'J{SW.end + self.extra + 1}'] = d[0]
-                self.ws[f'L{SW.end + self.extra + 1}'] = f"{d[2]}/{d[3]}"
-                self.ws[f'N{SW.end + self.extra + 1}'] = d[1]
+                self.ws[f'A{self.extra + 2}'] = self.extra
+                self.ws[f'C{self.extra + 2}'].hyperlink = d[0]
+                self.ws[f'C{self.extra + 2}'].value = d[0]
+                self.ws[f'C{self.extra + 2}'].style = "Hyperlink"
+                self.ws[f'B{self.extra + 2}'] = d[1]
+                self.ws[f'D{self.extra + 2}'] = d[2]
+                self.ws[f'E{self.extra + 2}'] = d[3]
                 self.extra += 1
 
-    @staticmethod
-    def find_sales_high(data, min_price, min_sales):
-        """
-        analyzes data
-        :param data: list, [row, list of [title, price, sales]]
-        :param min_price: int
-        :param min_sales: int
-        :return high_sales_data: tuple, (row, [item1, item2], [price1, sales1], [price2, sales2], extra_data)
-        """
-        data_list = data[1]
-        index = 0
-        extra_data = []
-        for (title, price, sales) in data_list:
-            if sales >= int(SW.min_b_e):
-                extra_data.append([index, title, sales, price])
-            index += 1
+        self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
 
-        sales_list = []
-        for d in data[1]:
-            if (d[1] < min_price) or (d[2] < min_sales):
-                sales_list.append(-1)
-            else:
-                sales_list.append(d[2])
-        sorted_list = sorted(sales_list, reverse=True)
-        s_1 = sales_list.index(sorted_list[0])
-        if len(sales_list) == 1:
-            return data[0], [s_1, 0], [data[1][s_1][1], data[1][s_1][2]], [0, 0], extra_data
-        if sorted_list[0] == sorted_list[1]:
-            salesM = sorted_list[0]
-            s_2 = sales_list[sales_list.index(salesM) + 1:].index(salesM) + sales_list.index(salesM) + 1
-        else:
-            s_2 = sales_list.index(sorted_list[1])
+    def create_extra_sheet(self):
+        self.setup_new_sheet()
+        self.ws.append(["Index", "타오바오 상품명", "링크", "구매수", "가격"])
+        self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
+        self.ex_exists = True
 
-        return data[0], [s_1, s_2], [data[1][s_1][1], data[1][s_1][2]], [data[1][s_2][1], data[1][s_2][2]], extra_data
-
-    def setup_target_sheet_init(self):
-        self.doc = openpyxl.load_workbook(SW.t_file_dir + "/" + SW.filename + ".xlsx")
+    def create_template(self):
+        self.doc = openpyxl.load_workbook(self.in_directory)
         self.ws = self.doc.active
-        self.ws['H1'] = "사진1"
-        self.ws['I1'] = "사진2"
-        self.ws['J1'] = "링크1"
-        self.ws['K1'] = "링크2"
-        self.ws['L1'] = "구매수/가격1"
-        self.ws['M1'] = "구매수/가격2"
-        self.ws['N1'] = "타오바오 상품명"
-
-        self.doc.save(SW.t_file_dir + "/" + SW.filename + ".xlsx")
+        self.ws['I1'] = "사진1"
+        self.ws['J1'] = "사진2"
+        self.ws['K1'] = "링크1"
+        self.ws['L1'] = "링크2"
+        self.ws['M1'] = "구매수/가격1"
+        self.ws['N1'] = "구매수/가격2"
+        self.ws['O1'] = "타오바오 상품명"
+        self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
 
     @staticmethod
-    def extract_image(cell, sheet):  # openpyxl_image_loader.SheetImageLoader
+    def extract_image(index, cell, sheet):  # openpyxl_image_loader.SheetImageLoader
         image_loader = SheetImageLoader(sheet)
         image = image_loader.get(cell)
-        ts = str(datetime.datetime.now().timestamp())
         rgb_image = image.convert("RGB")
-        rgb_image.save(os.getcwd() + rf"\temp\img_{ts}.jpg")
+        rgb_image.save(os.getcwd() + rf"\temp\img_{index}.jpg")
         del image, rgb_image, image_loader
-        return f"file:///{os.getcwd()}/temp/img_{ts}.jpg", os.getcwd() + rf"\temp\img_{ts}.jpg", f"img_{ts}.jpg"
+        return f"file:///{os.getcwd()}/temp/img_{index}.jpg", os.getcwd() + rf"\temp\img_{index}.jpg", f"img_{index}.jpg"
 
-    @staticmethod
-    def copy_file():
-        shutil.copy(SW.o_file_dir, SW.t_file_dir + "/" + SW.filename + ".xlsx")
+    def index_to_row(self, index: int) -> int:
+        for row in self.index_range:
+            if index == int(self.read_sheet[f'A{row}'].value):
+                return row
+
+    def row_to_index(self, row: int) -> int:
+        return int(self.read_sheet[f'A{row}'].value)

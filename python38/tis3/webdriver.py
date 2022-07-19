@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # tis3/webdriver.py
 
-import subprocess, os, time, pyautogui
+import subprocess, os, sys, time
 import selenium.common.exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -10,109 +10,114 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium import webdriver
 from subprocess import CREATE_NO_WINDOW  # Only available in Windows
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.options import Options
 from urllib import parse
-# from webdriver_manager.chrome import ChromeDriverManager
-
+from PyQt5.QtCore import pyqtSignal, QObject
 from logger import Logger
-from excel import Excel
 
-log = Logger()
+log = Logger().logger
+
+
+class Signal(QObject):
+    signal_status = pyqtSignal(str, str)
+
+    def emit_signal(self, arg1, arg2):
+        # noinspection PyUnresolvedReferences
+        self.signal_status.emit(arg1, arg2)
 
 
 class WebDriver:
-    def __init__(self, glc):
-        self.google_lens_code = glc
-        subprocess.Popen(
-            r'C:\Program Files\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
-        option = Options()
+    def __init__(self):
+        subprocess.Popen(r'C:\Program Files\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
+        option = webdriver.ChromeOptions()
         option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-        option.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36")
-        # chrome_ver = chromedriver_autoinstaller.get_chrome_version().split('.')[0]
-        # self.chrome_service = ChromeService(ChromeDriverManager().install())
-        self.chrome_service = ChromeService("chromedriver.exe")
+        option.add_argument("headless")  # TODO: Headless 활성화
+        option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36")
+
+        if getattr(sys, 'frozen', False):
+            chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
+            self.chrome_service = ChromeService(chromedriver_path)
+        else:
+            self.chrome_service = ChromeService("chromedriver.exe")
         self.chrome_service.creationflags = CREATE_NO_WINDOW
         self.driver = webdriver.Chrome(service=self.chrome_service, options=option)
         self.action = ActionChains(self.driver)
         self.driver.maximize_window()
-        self.driver.implicitly_wait(5)
         log.info("Webdriver Initiated")
 
-        # TODO: 로그인이 안된 상태에서 검색이 안되므로 프로그램 실행 최초 로그인 필요
+        """time.sleep(2)
+        self.driver.get("https://world.taobao.com/wow/z/oversea/SEO-SEM/ovs-pc-login")
+        wait = WebDriverWait(self.driver, 5)
+        _ = wait.until(ec.visibility_of_element_located((By.XPATH, "//*[@id=\"login-form\"]/div[4]/button")))
+        time.sleep(5)
+        log.info("Login Success")"""  # TODO: Login at the start of the driver
 
+        self.search_button_path = "/html/body/div/div/div[1]/div[1]/div[1]"
         self.try_again_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[1]/div[2]/div"
         self.login_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[2]/div[2]/div"
         self.verify_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[3]/div[2]/div"
-        self.search_button_path = f"//*[@id=\"{self.google_lens_code}\"]/div[4]/div/div[1]/div[1]/div[1]/div[1]"
 
-    def main(self, cell, limit, sheet):
+    def main(self, row, limit, sheet, index, mp, ms, mse, al):
         """
-        opens image file at the driver
+        get request image file to the driver
         then searches it on taobao
-        :param cell: str, target cell
+        finally analyzes it and returns the data
+        :param al: int, analysis limit
+        :param index: excel index of the image
+        :param mse: int
+        :param ms: int
+        :param mp: int
+        :param row: int, target row
         :param limit: int, limit of items per image
         :param sheet: Workbook.Sheet(), for preventing I/O on closed file
-        :return data: json, {response_code: CODE, data: list of [title, price, sales]}
+        :return data: json, {response_code: CODE, data: tuple, (index, basic_data, extra_data)}
         """
-        img_links = Excel().extract_image(cell, sheet)
-        log.info(f"extracted image from sheet \"{sheet}\" {cell}. filename: {img_links[2]}")
-        self.driver.get(img_links[0])
-        os.remove(img_links[1])
-        log.info(f"removed image file: {img_links[2]}")
-        return self.search(limit)
+        img_link = sheet[f"C{row}"].value
+        self.driver.get(img_link)
+        raw_data = self.search(limit)
+        if raw_data["response_code"] == 1:
+            log.info(f"Index: {index} Skipped")
+            return {"response_code": 1, "index": index}
+        return self.add_link([index, self.analyze(raw_data, mp, ms, mse, al)])
 
     def search(self, limit):
-        time.sleep(0.2)
-        click(960, 540, 'r')
-        time.sleep(0.5)
-        click(1000, 680)  # y=650
-        time.sleep(4)
-        click(1835, 130)  # x=1850
-        time.sleep(1)
-        self.close_tab_from_front()
         data = self.taobao_extension(limit)
         if not data:  # Unsuccessful Search
-            SW.status.setStyleSheet("Color : red")
-            SW.status.setText("Skipping...")
+            Signal().emit_signal("red", "Retrying")
             time.sleep(3)
-            data = self.analyze(limit)
+            data = self.fetch(limit)
             if data:
-                SW.status.setStyleSheet("Color : green")
-                SW.status.setText("Normal")
-                return {"response_code": 916, "data": data}
-
-            if data:
-                return {"response_code": 916, "data": data}
+                Signal().emit_signal("green", "Normal")
+                return {"response_code": 100, "data": data}
             else:
                 return {"response_code": 1}
 
-        return {"response_code": 916, "data": data}
+        return {"response_code": 100, "data": data}
 
     def taobao_extension(self, limit):
-        self.action.move_to_element(self.driver.find_element(By.XPATH,
-                                                             f"//*[@id=\"{self.google_lens_code}\"]/div[3]/c-wiz/div/c-wiz/div/div[1]/div/div[2]/div/div/div/div/div[4]")).perform()
-        time.sleep(0.15)
+        self.action.move_to_element(self.driver.find_element(By.XPATH, f"/html/body/img")).perform()
+        time.sleep(0.05)
         try:
             self.driver.find_element(By.XPATH, self.search_button_path).click()
         except selenium.common.exceptions.ElementNotInteractableException:
             print("DO NOT Move Mouse Pointer!! Retrying...")
-            time.sleep(0.5)
-            self.action.move_to_element(self.driver.find_element(By.XPATH,
-                                                                 f"//*[@id=\"{self.google_lens_code}\"]/div[3]/c-wiz/div/c-wiz/div/div[1]/div/div[2]/div/div/div/div/div[4]")).perform()
-            time.sleep(0.15)
+            time.sleep(0.2)
+            self.action.move_to_element(self.driver.find_element(By.XPATH, f"/html/body/img")).perform()
+            time.sleep(0.05)
             self.driver.find_element(By.XPATH, self.search_button_path).click()
         try:
             wait = WebDriverWait(self.driver, 15)
             _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
+            time.sleep(0.5)
         except selenium.common.exceptions.TimeoutException:
+            log.error('Unknown Error: selenium.common.exceptions.TimeoutException')
             return
 
-        return self.analyze(limit)
+        return self.fetch(limit)
 
-    def analyze(self, limit):
+    def fetch(self, limit):
         data = []
-        for i in range(1, limit + 1):  # limits amount of items to fetch (Default: 30)
+        for i in range(1, limit+1):  # limits amount of items to fetch (Default: 30)
             end_of_list = False
             paths = self.path_analyzer(i)
             output = []  # title, price, sales
@@ -140,41 +145,86 @@ class WebDriver:
 
         return data
 
+    @staticmethod
+    def analyze(data, min_price, min_sales, min_sales_extra, analyze_limit):
+        """
+        analyzes data
+        :param analyze_limit: int
+        :param min_sales_extra: int
+        :param data: dict, {response_code: CODE, data: [list of [title, price, sales]]}
+        :param min_price: int
+        :param min_sales: int
+        :return: tuple, ([item1, item2], [price1, sales1], [price2, sales2], extra_data)
+        """
+        data_list = data["data"]
+        data = data_list
+
+        extra_data = []
+        for (index, [title, price, sales]) in enumerate(data_list):
+            if sales >= int(min_sales_extra):
+                extra_data.append([index, title, sales, price])
+
+        sales_list = []
+        for d in data_list[:int(analyze_limit)]:
+            if (d[1] < min_price) or (d[2] < min_sales):
+                sales_list.append(-1)
+            else:
+                sales_list.append(d[2])
+        sorted_list = sorted(sales_list, reverse=True)
+        s_1 = sales_list.index(sorted_list[0])
+        if len(sales_list) == 1:
+            return [s_1, 0], [data[s_1][1], data[s_1][2]], [0, 0], extra_data
+        if sorted_list[0] == sorted_list[1]:
+            salesM = sorted_list[0]
+            s_2 = sales_list[sales_list.index(salesM) + 1:].index(salesM) + sales_list.index(salesM) + 1
+        else:
+            s_2 = sales_list.index(sorted_list[1])
+
+        return [s_1, s_2], [data[s_1][1], data[s_1][2]], [data[s_2][1], data[s_2][2]], extra_data
+
     def add_link(self, data):
         """
-        gets link and analyzes data
+        adds link to the data
         then saves image at temporary directory
-        :param data: tuple, (row, [item1, item2], [price1, sales1], [price2, sales2], extra_data)
+        :param data: list, [index, [[item1, item2], [price1, sales1], [price2, sales2], extra_data]]
         # extra_data: [index, title, sales, price]
-        :return analyzed_data: tuple, (row, [link1, "2, sales1, "2, price1, "2], extra_data)
+        :return: json, {response_code: CODE, data: tuple, (index, basic_data, extra_data)}
         """
         extra_data = []
-        for [index, title, sales, price] in data[4]:
-            self.driver.find_element(By.CSS_SELECTOR, self.path_analyzer(index + 1)[0]).click()
-            time.sleep(1)
+        for [index, title, sales, price] in data[1][3]:
+            self.driver.find_element(By.CSS_SELECTOR, self.path_analyzer(index+1)[0]).click()
+            time.sleep(0.5)
             self.driver.switch_to.window(self.driver.window_handles[1])
+            time.sleep(0.2)
             link = self.parse_url(self.driver.current_url)
             self.close_tab_from_back()
             extra_data.append([link, title, sales, price])
 
         links = []
+        # img_links = []
         for i in range(2):
-            self.driver.find_element(By.CSS_SELECTOR, self.path_analyzer(data[1][i] + 1)[0]).click()
-            time.sleep(1)
+            self.driver.find_element(By.CSS_SELECTOR, self.path_analyzer(data[1][0][i]+1)[0]).click()
+            time.sleep(0.5)
             self.driver.switch_to.window(self.driver.window_handles[1])
             time.sleep(0.2)
             links.append(self.parse_url(self.driver.current_url))
             self.close_tab_from_back()
-            img_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({data[1][i] + 1}) > div > div.ap-is-link.ap-product-image > img"
+
+            img_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({data[1][0][i]+1}) > div > div.ap-is-link.ap-product-image > img"
             # imgUrl = self.driver.find_element(By.CSS_SELECTOR, img_path).get_attribute("src")
+            # img_links.append(imgUrl)
             self.download_img(img_path, os.getcwd() + rf"\temp\img\{data[0]}_{i}.jpg")
 
-        return data[0], [links[0], links[1], data[2][1], data[3][1], data[2][0], data[3][0]], extra_data
+        log.info(f"Index: {data[0]} Fetched")
+        output = [data[0], [links[0], links[1], data[1][1][1], data[1][1][0], data[1][2][1], data[1][2][0]], extra_data]
+        return {"response_code": 100, "data": output}
 
+    """
     def close_extension(self):
-        close_button = f"//*[@id=\"{SW.google_lens_code}\"]/div[4]/div/div[1]/div[1]/div/div[3]/div/div[3]/div[1]"
+        close_button = f"/html/body/div/div/div[1]/div[1]/div/div[3]/div/div[3]/div[1]"
         self.driver.find_element(By.XPATH, close_button).click()
         time.sleep(0.5)
+    """
 
     def download_img(self, css_path, file_path):
         with open(file_path, "wb") as file:
@@ -191,9 +241,9 @@ class WebDriver:
     @staticmethod
     def parse_url(url):
         if "ali_redirect.html?url" in url:
-            return parse.unquote(url[url.index("url=") + 4:url.index("%26ns")], encoding="utf-8")
+            return parse.unquote(url[url.index("url=")+4:url.index("%26ns")], encoding="utf-8")
         elif "member/login.html" in url:
-            return url[url.index("redirect=") + 9:url.index("&ns")]
+            return url[url.index("redirect=")+9:url.index("&ns")]
         else:
             return url
 
@@ -218,6 +268,7 @@ class WebDriver:
                 tabs = self.driver.window_handles
             except selenium.common.exceptions.InvalidSessionIdException:
                 log.error("Invalid Session ID")
+                return
         try:
             self.driver.switch_to.window(tabs[0])
         except selenium.common.exceptions.InvalidSessionIdException:
@@ -226,14 +277,7 @@ class WebDriver:
     def close_tab_from_back(self, count=1):
         tabs = self.driver.window_handles
         for i in range(count):
-            self.driver.switch_to.window(tabs[len(tabs) - 1])
+            self.driver.switch_to.window(tabs[len(tabs)-1])
             self.driver.close()
             tabs = self.driver.window_handles
         self.driver.switch_to.window(tabs[0])
-
-
-def click(x, y, rl='l'):
-    if rl == 'r':
-        pyautogui.rightClick(x, y)
-    else:
-        pyautogui.click(x, y)
