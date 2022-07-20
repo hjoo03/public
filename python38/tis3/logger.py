@@ -6,15 +6,15 @@ from logging.handlers import RotatingFileHandler
 
 
 class Logger:
-    def __init__(self):
+    def __init__(self, name: str = None):
         if not os.path.isdir(os.getcwd() + "\\log\\"):
             os.makedirs(os.getcwd() + "\\log")
 
         self.filename = os.getcwd() + '\\log\\' + datetime.datetime.now().strftime('%y%m%d_%H%M') + '.log'
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
         self.formatter = logging.Formatter(
-            u'%(asctime)s [%(levelname)s] File "%(filename)s", line %(lineno)d, in %(funcName)s: "%(message)s"')
+            u'%(asctime)s [%(levelname)s] %(name)s[%(lineno)d]: "%(message)s"')
         self.file_handler = logging.FileHandler(self.filename)
 
         log_max_size = 10 * 1024 * 1024  # 20MB

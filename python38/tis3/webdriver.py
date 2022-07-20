@@ -15,7 +15,9 @@ from urllib import parse
 from PyQt5.QtCore import pyqtSignal, QObject
 from logger import Logger
 
-log = Logger().logger
+log = Logger("webdriver").logger
+server_log = Logger("selenium.webdriver.remote.remote_connection").logger
+server_log.setLevel(20)
 
 
 class Signal(QObject):
@@ -126,7 +128,7 @@ class WebDriver:
                 try:
                     res = self.driver.find_element(By.CSS_SELECTOR, path).text
                     if cnt == 1:
-                        res = float(res[1:].replace(',', ''))
+                        res = int(res[1:-3].replace(',', ''))
                     elif cnt == 2:
                         try:
                             res = int(res[:-3])
@@ -259,7 +261,6 @@ class WebDriver:
         try:
             tabs = self.driver.window_handles
         except selenium.common.exceptions.InvalidSessionIdException:
-            log.error("Invalid Session ID")
             return
         for i in range(count):
             self.driver.switch_to.window(tabs[0])
@@ -267,7 +268,6 @@ class WebDriver:
             try:
                 tabs = self.driver.window_handles
             except selenium.common.exceptions.InvalidSessionIdException:
-                log.error("Invalid Session ID")
                 return
         try:
             self.driver.switch_to.window(tabs[0])

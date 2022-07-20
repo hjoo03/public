@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 # tis/excel.py
 
-import os, openpyxl, shutil
+import os, openpyxl, shutil, string
 from openpyxl.drawing.image import Image
 from openpyxl_image_loader import SheetImageLoader
+from logger import Logger
+
+log = Logger("excel").logger
 
 
 class Excel:
     def __init__(self):
         if not os.path.isdir(os.getcwd() + "\\temp\\img\\"):
             os.makedirs(os.getcwd() + "\\temp\\img")
-
-        self.doc = None
-        self.ws = None
-        self.read_sheet = None
+        self.worksheet, self.doc, self.ws, self.read_sheet, self.now_sheet = None, None, None, None, None
         self.ex_exists = False
         self.extra = 0
         self.finished_items = 0
@@ -44,37 +44,25 @@ class Excel:
         self.doc = openpyxl.Workbook()
         self.ws = self.doc.active
 
-    def write(self, data: dict, last_row: int, split: int):
+    def write(self, data: dict, row: int):
         """
         writes main data in the sheet
-        :param split: int
-        :param last_row: int, for splitting files
+        :param row: int, for splitting files
         :param data: tuple, (index, [link1, "2, sales1, price1, sales2, price2], extra_data)
         :return index: int
         """
+        index = data[0]
         extra_data = [data[2]]
-        self.write_extra(extra_data)
-
-        if self.finished_items % split == 0 and self.finished_items != 0:
-            self.setup_sheet()
-            self.ws.delete_rows(2, last_row - 1)
-            self.current_file += 1
-            self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
-
-        if self.finished_items % 5 == 0:
-            self.setup_sheet()
-            for row in range(2, last_row):
-                i = self.ws[f'A{row}'].value
-                if i in self.skipped_list:
-                    self.ws.delete_rows(row, 1)
-            self.skips = 0
+        self.write_extra(extra_data, index)
 
         self.setup_sheet()
-        index = data[0]
         info = data[1]
-        row = self.finished_items % split + 2 + self.skips
-        self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{index}_0.jpg"), f"I{row}")
-        self.ws.add_image(Image(os.getcwd() + rf"\temp\img\{index}_1.jpg"), f"J{row}")
+        img0 = Image(os.getcwd() + rf"\temp\img\{index}_0.jpg")
+        img0.width, img0.height = 132, 132
+        img1 = Image(os.getcwd() + rf"\temp\img\{index}_1.jpg")
+        img1.width, img1.height = 132, 132
+        self.ws.add_image(img0, f"I{row}")
+        self.ws.add_image(img1, f"J{row}")
         self.ws[f'K{row}'].hyperlink = info[0]
         self.ws[f'L{row}'].hyperlink = info[1]
         self.ws[f'K{row}'].value = info[0]
@@ -85,14 +73,17 @@ class Excel:
         self.ws[f'N{row}'] = f"{info[4]}/{info[5]}"
         self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
         self.finished_items += 1
+
+        log.info(f"Added item_{index} to file {self.current_file:02}; total: {self.finished_items}")
         shutil.rmtree(os.getcwd() + "\\temp\\img\\")
         os.makedirs(os.getcwd() + "\\temp\\img")
 
         return index
 
-    def write_extra(self, data):
+    def write_extra(self, data, index):
         """
         writes extra data in the sheet
+        :param index: int
         :param data: list, [list of [link, title, sales, price]]
         :return:
         """
@@ -110,7 +101,7 @@ class Excel:
                 self.ws[f'D{self.extra + 2}'] = d[2]
                 self.ws[f'E{self.extra + 2}'] = d[3]
                 self.extra += 1
-
+                log.info(f"Added item_{index} to high-sales; total: {self.extra}")
         self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
 
     def create_extra_sheet(self):
@@ -138,7 +129,7 @@ class Excel:
         rgb_image = image.convert("RGB")
         rgb_image.save(os.getcwd() + rf"\temp\img_{index}.jpg")
         del image, rgb_image, image_loader
-        return f"file:///{os.getcwd()}/temp/img_{index}.jpg", os.getcwd() + rf"\temp\img_{index}.jpg", f"img_{index}.jpg"
+        return os.getcwd() + rf"\temp\img_{index}.jpg"
 
     def index_to_row(self, index: int) -> int:
         for row in self.index_range:
@@ -147,3 +138,67 @@ class Excel:
 
     def row_to_index(self, row: int) -> int:
         return int(self.read_sheet[f'A{row}'].value)
+
+    @staticmethod
+    def delete_images(start_row, amount, sheet):
+        sheet_images = sheet._images[:]
+
+        _images = {}
+        for image in sheet_images:
+            row = image.anchor._from.row + 1
+            col = string.ascii_uppercase[image.anchor._from.col]
+            cell = f'{col}{row}'
+
+            _images[cell] = image
+
+        if amount == 0:
+            row = start_row
+            while True:
+                try:
+                    sheet._images.remove(_images[f'B{row}'])
+                    row += 1
+                except KeyError:
+                    break
+        else:
+            for row in range(start_row, start_row + amount):
+                try:
+                    sheet._images.remove(_images[f'B{row}'])
+                except KeyError:
+                    break
+
+    def split_file(self, splits, start_row, total_items):
+        split_list = []
+        j = total_items // splits
+        for i in range(0, j + 1):
+            if i == j:
+                split_list.append((start_row + splits * i, start_row + total_items))
+            else:
+                split_list.append((start_row + splits * i, start_row + splits * (i + 1)))
+
+        for (cnt, (s, e)) in enumerate(split_list, start=1):
+            wb = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+            ws = wb.active
+
+            del_rows = [(start_row, s), (e, start_row + total_items)]
+            a = del_rows[0][1] - del_rows[0][0]
+            b = del_rows[1][1] - del_rows[1][0]
+            if a != 0:
+                ws.delete_rows(del_rows[0][0], a)
+            if b != 0:
+                ws.delete_rows(del_rows[1][0], b)
+            self.delete_images(del_rows[0][0], del_rows[0][1] - del_rows[0][0], ws)
+            self.delete_images(del_rows[1][0], 0, ws)
+
+            images = [self.extract_image(index, f"B{row}", self.read_sheet) for (index, row) in enumerate(range(s, e))]
+            for (index, row) in enumerate(range(2, e - s + 2)):
+                img = Image(images[index])
+                img.height = 132
+                img.width = 132
+                ws.add_image(img, f"B{row}")
+
+            wb.save(self.out_directory + self.filename + f"_{cnt:02}.xlsx")
+            log.info(f"Splitting File {cnt}/{len(split_list)}")
+            shutil.rmtree(os.getcwd() + "\\temp")
+            os.makedirs(os.getcwd() + "\\temp\\img")
+
+        self.now_sheet = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx").active
