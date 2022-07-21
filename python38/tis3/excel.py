@@ -44,6 +44,9 @@ class Excel:
         self.doc = openpyxl.Workbook()
         self.ws = self.doc.active
 
+    def setup_now_sheet(self):
+        self.now_sheet = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx").active
+
     def write(self, data: dict, row: int):
         """
         writes main data in the sheet
@@ -189,16 +192,17 @@ class Excel:
             self.delete_images(del_rows[0][0], del_rows[0][1] - del_rows[0][0], ws)
             self.delete_images(del_rows[1][0], 0, ws)
 
-            images = [self.extract_image(index, f"B{row}", self.read_sheet) for (index, row) in enumerate(range(s, e))]
-            for (index, row) in enumerate(range(2, e - s + 2)):
-                img = Image(images[index])
+            images = [self.extract_image(index, f"B{row}", self.read_sheet) for (index, row) in enumerate(range(s, e), start=2)]
+            for (row, read_row) in enumerate(range(s, e), start=2):
+                img = Image(images[row])
                 img.height = 132
                 img.width = 132
                 ws.add_image(img, f"B{row}")
-
+                for column in ['A', 'C', 'D', 'E', 'F', 'G', 'H']:
+                    ws[column + str(row)] = self.read_sheet[column + str(read_row)]
             wb.save(self.out_directory + self.filename + f"_{cnt:02}.xlsx")
             log.info(f"Splitting File {cnt}/{len(split_list)}")
             shutil.rmtree(os.getcwd() + "\\temp")
             os.makedirs(os.getcwd() + "\\temp\\img")
 
-        self.now_sheet = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx").active
+            self.setup_now_sheet()

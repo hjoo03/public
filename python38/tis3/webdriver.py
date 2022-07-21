@@ -33,8 +33,8 @@ class WebDriver:
         subprocess.Popen(r'C:\Program Files\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
         option = webdriver.ChromeOptions()
         option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-        option.add_argument("headless")  # TODO: Headless 활성화
-        option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36")
+        option.add_argument('window-size=100x100')
+        option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
 
         if getattr(sys, 'frozen', False):
             chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
@@ -44,7 +44,6 @@ class WebDriver:
         self.chrome_service.creationflags = CREATE_NO_WINDOW
         self.driver = webdriver.Chrome(service=self.chrome_service, options=option)
         self.action = ActionChains(self.driver)
-        self.driver.maximize_window()
         log.info("Webdriver Initiated")
 
         """time.sleep(2)
@@ -76,10 +75,12 @@ class WebDriver:
         """
         img_link = sheet[f"C{row}"].value
         self.driver.get(img_link)
+        Signal().emit_signal("green", "Searching")
         raw_data = self.search(limit)
         if raw_data["response_code"] == 1:
             log.info(f"Index: {index} Skipped")
             return {"response_code": 1, "index": index}
+        Signal().emit_signal("green", "Fetching Data")
         return self.add_link([index, self.analyze(raw_data, mp, ms, mse, al)])
 
     def search(self, limit):

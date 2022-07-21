@@ -28,7 +28,7 @@ class MainWindow(QMainWindow, Window):
         self.p_i = 30
         self.a_i = 10
         self.start_row = 2
-        self.delay = 10
+        self.delay = 100
         self.splits = 100
         self.auto_start = True
         self.pause = False
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow, Window):
         self.total_items = 0
         self.consecutive_skips = 0
         self.last_row = 0
-        self.sig = None
+        self.count = 0
 
     def split(self):
         self.splitfile.setEnabled(False)
@@ -93,7 +93,7 @@ class MainWindow(QMainWindow, Window):
                 self.total_items = s - int(self.start_row)
                 break
             s += 1
-        Excel.index_range = range(self.start_row, self.start_row + self.total_items)
+        Excel.index_range = range(int(self.start_row), int(self.start_row) + self.total_items)
         log.info(f"File: {self.o_file_dir}; total_items={self.total_items}")
 
         self.thread.start()
@@ -146,28 +146,28 @@ class MainWindow(QMainWindow, Window):
         self.file_label_2.repaint()
 
     def s_m1_p(self):
-        self.min_p = self.minprice.text()
+        self.min_p = int(self.minprice.text())
 
     def s_m1_b(self):
-        self.min_b = self.minbuy.text()
+        self.min_b = int(self.minbuy.text())
 
     def s_m_e(self):
-        self.min_b_e = self.minbuy_extra.text()
+        self.min_b_e = int(self.minbuy_extra.text())
 
     def s_p_i(self):
-        self.p_i = self.peritem.text()
+        self.p_i = int(self.peritem.text())
 
     def s_a_i(self):
-        self.a_i = self.a_item.text()
+        self.a_i = int(self.a_item.text())
 
     def s_sr(self):
-        self.start_row = self.startrow_lb.text()
+        self.start_row = int(self.startrow_lb.text())
 
     def sd(self):
-        self.delay = self.delayt.text()
+        self.delay = int(self.delayt.text())
 
     def ss(self):
-        self.splits = self.split_lb.text()
+        self.splits = int(self.split_lb.text())
 
     def set_as(self, state):
         if state == Qt.checked:
@@ -214,7 +214,6 @@ class Worker(QObject):
                 MW.set_status("blue", "Idle")
                 MW.start_row = row
                 MW.startrow_lb.setText(str(row))
-            """
             if cnt % 5 == 1:
                 try:
                     self.WD.close_driver()
@@ -223,9 +222,6 @@ class Worker(QObject):
                     pass
                 self.WD = WebDriver()
                 self.signal.signal_status.connect(MW.set_status)
-            """
-            self.WD = WebDriver()
-            self.signal.signal_status.connect(MW.set_status)
 
             part_row = row - (MW.splits + 6) * (Excel.current_file - 1)
             res = self.main(row, part_row)
@@ -241,28 +237,36 @@ class Worker(QObject):
 
     def main(self, row, part_row) -> dict:
         res = self.wd_data(row, part_row)
+        MW.count += 1
+
         if res["response_code"] == 3:
             log.error("3 consecutive skips - return error.")
             return res
         elif res["response_code"] in (1, 2):
             return res
         MW.last_row = row
-        time.sleep(int(MW.delay))
+        # grab a random time float
+        sleep_time = float(str(time.time_ns())[12] + '.' + str(time.time_ns())[13])
+        time.sleep(int(sleep_time))
 
         return {"response_code": 100}
 
     def wd_data(self, row, part_row):
+        if MW.count == MW.splits:
+            Excel.current_file += 1
+            Excel.setup_now_sheet()
+
         d = self.WD.main(part_row, MW.p_i, Excel.now_sheet, Excel.row_to_index(row), MW.min_p, MW.min_b, MW.min_b_e, MW.a_i)
         if d["response_code"] != 100:
             Excel.skipped_list.append(d["index"])
             Excel.skips += 1
             MW.consecutive_skips += 1
             if MW.consecutive_skips == 2:
-                log.info(f"2 consecutive fails - sleeping for {MW.delay * 20} seconds.")
+                log.info(f"2 consecutive fails - sleeping for {MW.delay} seconds.")
                 MW.set_status("red", "Sleeping")
                 self.WD.close_driver()
                 del self.WD
-                time.sleep(int(MW.delay) * 20)
+                time.sleep(int(MW.delay))
                 MW.set_status("green", "Running")
                 return {"response_code": 2}
             if MW.consecutive_skips > 2:
@@ -307,7 +311,7 @@ def timestamp() -> str:
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     MW = MainWindow()
-    log = Logger("mainLogger").logger
+    log = Logger().logger
     Excel = Excel()
     MW.show()
     app.exec_()

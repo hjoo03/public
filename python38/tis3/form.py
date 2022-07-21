@@ -293,7 +293,7 @@ class Window(object):
         self.label_7.setText(_translate("SettingsWindow", "Start row:"))
         self.startrow_lb.setText(_translate("SettingsWindow", "2"))
         self.label_8.setText(_translate("SettingsWindow", "Delay (sec) :"))
-        self.delayt.setText(_translate("SettingsWindow", "10"))
+        self.delayt.setText(_translate("SettingsWindow", "100"))
         self.label_10.setText(_translate("SettingsWindow", "고급 설정"))
         self.split_lb.setText(_translate("SettingsWindow", "100"))
         self.label_9.setText(_translate("SettingsWindow", "Split files:"))
