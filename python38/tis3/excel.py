@@ -6,7 +6,7 @@ from openpyxl.drawing.image import Image
 from openpyxl_image_loader import SheetImageLoader
 from logger import Logger
 
-log = Logger("excel").logger
+log = Logger('').logger
 
 
 class Excel:
@@ -205,7 +205,7 @@ class Excel:
                 img.width = 132
                 ws.add_image(img, f"B{row}")
                 for column in ['A', 'C', 'D', 'E', 'F', 'G', 'H']:
-                    ws[column + str(row)].value = self.read_sheet[column + str(read_row)].value
+                    ws[column + str(row)] = self.read_sheet[column + str(read_row)].value
             wb.save(self.out_directory + self.filename + f"_{cnt:02}.xlsx")
             log.info(f"Split File {cnt}/{len(split_list)}")
             shutil.rmtree(os.getcwd() + "\\temp")

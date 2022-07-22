@@ -6,11 +6,13 @@ from logging.handlers import RotatingFileHandler
 
 
 class Logger:
-    def __init__(self, name: str = None):
-        if not os.path.isdir(os.getcwd() + "\\log\\"):
-            os.makedirs(os.getcwd() + "\\log")
+    def __init__(self, filedir: str, name: str = None):
+        if not filedir:
+            filedir = os.getcwd() + "\\log\\"
+        if not os.path.isdir(filedir):
+            os.makedirs(filedir)
 
-        self.filename = os.getcwd() + '\\log\\' + datetime.datetime.now().strftime('%y%m%d_%H%M') + '.log'
+        self.filename = filedir + datetime.datetime.now().strftime('%y%m%d_%H%M') + '.log'
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
         self.formatter = logging.Formatter(

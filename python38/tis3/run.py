@@ -8,9 +8,9 @@ from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot, Qt
 
 # Local Imports
 from form import Window
-from webdriver import WebDriver, Signal
 from logger import Logger
-from excel import Excel
+import excel
+import webdriver
 
 
 class MainWindow(QMainWindow, Window):
@@ -32,14 +32,18 @@ class MainWindow(QMainWindow, Window):
         self.splits = 100
         self.auto_start = True
         self.pause = False
-        self.minprice.setValidator(self.onlyInt)
-        self.minbuy.setValidator(self.onlyInt)
-        self.minbuy_extra.setValidator(self.onlyInt)
-        self.peritem.setValidator(self.onlyInt)
-        self.a_item.setValidator(self.onlyInt)
-        self.startrow_lb.setValidator(self.onlyInt)  # TODO: add try, except statement to avoid ValueError
-        self.delayt.setValidator(self.onlyInt)
-        self.split_lb.setValidator(self.onlyInt)
+
+        def setValidators():
+            self.minprice.setValidator(self.onlyInt)
+            self.minbuy.setValidator(self.onlyInt)
+            self.minbuy_extra.setValidator(self.onlyInt)
+            self.peritem.setValidator(self.onlyInt)
+            self.a_item.setValidator(self.onlyInt)
+            self.startrow_lb.setValidator(self.onlyInt)
+            self.delayt.setValidator(self.onlyInt)
+            self.split_lb.setValidator(self.onlyInt)
+
+        setValidators()
         self.minprice.textChanged.connect(self.s_m1_p)
         self.minbuy.textChanged.connect(self.s_m1_b)
         self.minbuy_extra.textChanged.connect(self.s_m_e)
@@ -66,7 +70,16 @@ class MainWindow(QMainWindow, Window):
         self.last_row = 0
         self.count = 0
 
+    def init_globals(self):
+        global log, Excel, file_dir
+        file_dir = self.t_file_dir + "\\log\\"
+        log = Logger(filedir=file_dir, name="main").logger
+        excel.log = Logger(filedir=file_dir, name="excel").logger
+        Excel = excel.Excel()
+        webdriver.log = Logger(filedir=file_dir, name="webdriver").logger
+
     def split(self):
+        self.init_globals()
         self.splitfile.setEnabled(False)
         self.thread = QThread(parent=self)
         self.worker = Worker2()
@@ -146,28 +159,36 @@ class MainWindow(QMainWindow, Window):
         self.file_label_2.repaint()
 
     def s_m1_p(self):
-        self.min_p = int(self.minprice.text())
+        value = self.minprice.text()
+        self.min_p = int(value if value != '' else 0)
 
     def s_m1_b(self):
-        self.min_b = int(self.minbuy.text())
+        value = self.minbuy.text()
+        self.min_b = int(value if value != '' else 0)
 
     def s_m_e(self):
-        self.min_b_e = int(self.minbuy_extra.text())
+        value = self.minbuy_extra.text()
+        self.min_b_e = int(value if value != '' else 0)
 
     def s_p_i(self):
-        self.p_i = int(self.peritem.text())
+        value = self.peritem.text()
+        self.p_i = int(value if value != '' else 0)
 
     def s_a_i(self):
-        self.a_i = int(self.a_item.text())
+        value = self.a_item.text()
+        self.a_i = int(value if value != '' else 0)
 
     def s_sr(self):
-        self.start_row = int(self.startrow_lb.text())
+        value = self.startrow_lb.text()
+        self.start_row = int(value if value != '' else 0)
 
     def sd(self):
-        self.delay = int(self.delayt.text())
+        value = self.delayt.text()
+        self.delay = int(value if value != '' else 0)
 
     def ss(self):
-        self.splits = int(self.split_lb.text())
+        value = self.split_lb.text()
+        self.splits = int(value if value != '' else 0)
 
     def set_as(self, state):
         if state == Qt.checked:
@@ -199,7 +220,7 @@ class Worker(QObject):
     def __init__(self):
         super().__init__()
         self.WD = None
-        self.signal = Signal()
+        self.signal = webdriver.Signal()
 
     def run(self):
         for cnt, row in enumerate(range(int(MW.start_row), int(MW.start_row) + MW.total_items), start=1):
@@ -220,7 +241,8 @@ class Worker(QObject):
                     del self.WD
                 except AttributeError:
                     pass
-                self.WD = WebDriver()
+
+                self.WD = webdriver.WebDriver()
                 self.signal.signal_status.connect(MW.set_status)
 
             part_row = row - (MW.splits + 6) * (Excel.current_file - 1)
@@ -230,7 +252,7 @@ class Worker(QObject):
                 self.finished.emit()
                 return
             elif res["response_code"] == 2 and cnt % 5 != 0:
-                self.WD = WebDriver()
+                self.WD = webdriver.WebDriver()
                 self.signal.signal_status.connect(MW.set_status)
         # noinspection PyUnresolvedReferences
         self.finished.emit()
@@ -311,7 +333,5 @@ def timestamp() -> str:
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     MW = MainWindow()
-    log = Logger().logger
-    Excel = Excel()
     MW.show()
     app.exec_()

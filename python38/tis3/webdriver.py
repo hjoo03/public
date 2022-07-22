@@ -15,9 +15,9 @@ from urllib import parse
 from PyQt5.QtCore import pyqtSignal, QObject
 from logger import Logger
 
-log = Logger("webdriver").logger
-server_log = Logger("selenium.webdriver.remote.remote_connection").logger
-server_log.setLevel(20)
+log = Logger('').logger
+# server_log = Logger("selenium.webdriver.remote.remote_connection").logger
+# server_log.setLevel(20)
 
 
 class Signal(QObject):
@@ -111,7 +111,7 @@ class WebDriver:
         try:
             wait = WebDriverWait(self.driver, 15)
             _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
-            time.sleep(0.5)
+            time.sleep(2)
         except selenium.common.exceptions.TimeoutException:
             log.error('Unknown Error: selenium.common.exceptions.TimeoutException')
             return
