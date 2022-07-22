@@ -207,9 +207,9 @@ class WebDriver:
         # img_links = []
         for i in range(2):
             self.driver.find_element(By.CSS_SELECTOR, self.path_analyzer(data[1][0][i]+1)[0]).click()
-            time.sleep(0.5)
+            time.sleep(1)
             self.driver.switch_to.window(self.driver.window_handles[1])
-            time.sleep(0.2)
+            time.sleep(1)
             links.append(self.parse_url(self.driver.current_url))
             self.close_tab_from_back()
 

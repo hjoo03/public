@@ -37,7 +37,7 @@ class MainWindow(QMainWindow, Window):
         self.minbuy_extra.setValidator(self.onlyInt)
         self.peritem.setValidator(self.onlyInt)
         self.a_item.setValidator(self.onlyInt)
-        self.startrow_lb.setValidator(self.onlyInt)
+        self.startrow_lb.setValidator(self.onlyInt)  # TODO: add try, except statement to avoid ValueError
         self.delayt.setValidator(self.onlyInt)
         self.split_lb.setValidator(self.onlyInt)
         self.minprice.textChanged.connect(self.s_m1_p)
@@ -253,13 +253,13 @@ class Worker(QObject):
 
     def wd_data(self, row, part_row):
         if MW.count == MW.splits:
+            Excel.delete_skips()
             Excel.current_file += 1
             Excel.setup_now_sheet()
 
         d = self.WD.main(part_row, MW.p_i, Excel.now_sheet, Excel.row_to_index(row), MW.min_p, MW.min_b, MW.min_b_e, MW.a_i)
         if d["response_code"] != 100:
-            Excel.skipped_list.append(d["index"])
-            Excel.skips += 1
+            Excel.skipped_list.append(part_row)
             MW.consecutive_skips += 1
             if MW.consecutive_skips == 2:
                 log.info(f"2 consecutive fails - sleeping for {MW.delay} seconds.")

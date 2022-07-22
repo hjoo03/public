@@ -22,7 +22,6 @@ class Excel:
         self.out_directory = ''
         self.filename = ''
         self.index_range = []
-        self.skips = 0
         self.skipped_list = []
 
     def set_directory(self, in_dir, out_dir, filename):
@@ -106,6 +105,13 @@ class Excel:
                 self.extra += 1
                 log.info(f"Added item_{index} to high-sales; total: {self.extra}")
         self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
+
+    def delete_skips(self):
+        self.setup_sheet()
+        for skips in self.skipped_list:
+            self.ws.delete_rows(skips, 1)
+        self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+        log.info(f"Saved {self.filename}_{self.current_file:02}.xlsx")
 
     def create_extra_sheet(self):
         self.setup_new_sheet()
@@ -194,14 +200,14 @@ class Excel:
 
             images = [self.extract_image(index, f"B{row}", self.read_sheet) for (index, row) in enumerate(range(s, e), start=2)]
             for (row, read_row) in enumerate(range(s, e), start=2):
-                img = Image(images[row])
+                img = Image(images[row-2])
                 img.height = 132
                 img.width = 132
                 ws.add_image(img, f"B{row}")
                 for column in ['A', 'C', 'D', 'E', 'F', 'G', 'H']:
-                    ws[column + str(row)] = self.read_sheet[column + str(read_row)]
+                    ws[column + str(row)].value = self.read_sheet[column + str(read_row)].value
             wb.save(self.out_directory + self.filename + f"_{cnt:02}.xlsx")
-            log.info(f"Splitting File {cnt}/{len(split_list)}")
+            log.info(f"Split File {cnt}/{len(split_list)}")
             shutil.rmtree(os.getcwd() + "\\temp")
             os.makedirs(os.getcwd() + "\\temp\\img")
 
