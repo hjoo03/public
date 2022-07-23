@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # tis/excel.py
 
-import os, openpyxl, shutil  # , string
+import os, openpyxl, shutil, string
 from openpyxl.drawing.image import Image
 from openpyxl_image_loader import SheetImageLoader
 from logger import Logger
@@ -113,6 +113,7 @@ class Excel:  # TODO: Prompt if file already exists
         for row in range(start, end + 1):
             r = row + c
             if not self.ws[f'K{r}'].value:
+                self.delete_images(r, 1, self.ws)
                 self.ws.delete_rows(r, 1)
                 c -= 1
         self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
@@ -152,7 +153,6 @@ class Excel:  # TODO: Prompt if file already exists
     def row_to_index(self, row: int) -> int:
         return int(self.read_sheet[f'A{row}'].value)
 
-    """
     @staticmethod
     def delete_images(start_row, amount, sheet):
         sheet_images = sheet._images[:]
@@ -180,6 +180,7 @@ class Excel:  # TODO: Prompt if file already exists
                 except KeyError:
                     break
 
+    """
     def split_file(self, splits, start_row, total_items):
         split_list = []
         j = total_items // splits
