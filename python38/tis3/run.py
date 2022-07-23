@@ -242,6 +242,8 @@ class Worker(QObject):
                 except AttributeError:
                     pass
 
+                # if cnt != 1:
+                    # time.sleep(MW.delay/5)
                 self.WD = webdriver.WebDriver()
                 self.signal.signal_status.connect(MW.set_status)
 

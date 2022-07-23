@@ -9,7 +9,7 @@ from logger import Logger
 log = Logger('').logger
 
 
-class Excel:
+class Excel: # TODO: Prompt if already file exists
     def __init__(self):
         if not os.path.isdir(os.getcwd() + "\\temp\\img\\"):
             os.makedirs(os.getcwd() + "\\temp\\img")
