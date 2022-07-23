@@ -34,13 +34,6 @@ class WebDriver:
         self.option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         self.option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
         self.fd = fd
-        """time.sleep(2)
-        self.driver.get("https://world.taobao.com/wow/z/oversea/SEO-SEM/ovs-pc-login")
-        wait = WebDriverWait(self.driver, 5)
-        _ = wait.until(ec.visibility_of_element_located((By.XPATH, "//*[@id=\"login-form\"]/div[4]/button")))
-        time.sleep(5)
-        log.info("Login Success")"""  # TODO: Login at the start of the driver
-
         self.search_button_path = "/html/body/div/div/div[1]/div[1]/div[1]"
         self.try_again_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[1]/div[2]/div"
         self.login_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[2]/div[2]/div"
@@ -60,6 +53,20 @@ class WebDriver:
         self.driver = webdriver.Chrome(service=self.chrome_service, options=self.option)
         self.action = ActionChains(self.driver)
         self.log.info("Webdriver Initiated")
+        time.sleep(2)
+
+        self.driver.get("https://login.taobao.com/member/login.jhtml?redirectURL=https%3A%2F%2Ftaobao.com")
+        wait = WebDriverWait(self.driver, 5)
+        _ = wait.until(ec.visibility_of_element_located((By.XPATH, "//*[@id=\"login-form\"]/div[4]/button")))
+        time.sleep(1)
+        self.driver.find_element(By.XPATH, "//*[@id=\"login-form\"]/div[4]/button").click()
+        self.log.info("Login Success")
+        time.sleep(5)
+
+        self.driver.get("https://shop-phinf.pstatic.net/20210215_231/1613380295198ISOkx_JPEG/14516078878939416_96934398.jpg?type=m120")
+        self.taobao_extension(0)
+        time.sleep(5)
+        self.log.info("Webdriver Configuration Completed")
 
     def main(self, row, limit, sheet, index, mp, ms, mse, al):
         """
