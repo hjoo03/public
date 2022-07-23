@@ -12,6 +12,11 @@ from logger import Logger
 import excel
 import webdriver
 
+# TODO: write _temp at the file working through
+# TODO: pause button function (thread killing)
+# TODO: notify via kakaotalk or firebase when error occurs (or process ends)
+# TODO: simplify filename
+
 
 class MainWindow(QMainWindow, Window):
     def __init__(self):
@@ -148,7 +153,7 @@ class MainWindow(QMainWindow, Window):
         MW.set_status("blue", "Paused")
         MW.startrow_lb.setText(str(MW.last_row))
         MW.start_row = int(MW.last_row)
-        self.worker.quit()  # TODO: not working
+        self.worker.quit()
 
     def select_file(self):
         file_filter = "Excel File (*.xlsx)"
