@@ -240,25 +240,28 @@ class Worker(QThread):
 
     def run(self):
         for cnt, row in enumerate(range(int(MW.start_row), int(MW.start_row) + MW.total_items), start=1):
+            """
             if cnt % 5 == 1:
                 try:
                     self.WD.close_driver()
                 except AttributeError:
                     pass
+            """
+            # if cnt != 1:
+            # time.sleep(MW.delay/5)
 
-                # if cnt != 1:
-                    # time.sleep(MW.delay/5)
-
-                if cnt == 1:
-                    self.WD = webdriver.WebDriver(file_dir)
-                    self.WD.config_log()
+            if cnt == 1:
+                self.WD = webdriver.WebDriver(file_dir)
+                self.WD.config_log()
                 self.WD.open_driver()
                 self.signal.signal_status.connect(MW.set_status)
+
+            if cnt % 5 == 1:
                 for i in Excel.skipped_list:
                     self.main(i, i, skip=True)
                 Excel.skipped_list = []
 
-            if cnt % 10 == 1:
+            if cnt % 10 == 1 and cnt != 1:
                 Excel.delete_blanks(MW.start_row, row-1)
             # part_row = row - (MW.splits + 6) * (Excel.current_file - 1)
             res = self.main(row, row)
@@ -268,6 +271,8 @@ class Worker(QThread):
                 self.quit()
                 self.wait(2000)
                 return
+            elif res["response_code"] == 2:
+                self.WD.open_driver()
             """
             elif res["response_code"] == 2 and cnt % 5 != 0:
                 self.WD.open_driver()
@@ -312,7 +317,6 @@ class Worker(QThread):
                     log.info(f"2 consecutive fails - sleeping for {MW.delay} seconds.")
                     MW.set_status("red", "Sleeping")
                     self.WD.close_driver()
-                    del self.WD
                     time.sleep(int(MW.delay))
                     MW.set_status("green", "Running")
                     return {"response_code": 2}
