@@ -4,7 +4,7 @@
 import os, sys, datetime, time
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIntValidator
-from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import QThread, pyqtSlot
 
 # Local Imports
 from form import Window
@@ -28,10 +28,11 @@ class MainWindow(QMainWindow, Window):
         self.p_i = 30
         self.a_i = 10
         self.start_row = 2
-        self.delay = 100
-        self.splits = 100
-        self.auto_start = True
-        self.pause = False
+        self.delay = 120
+        # self.splits = 100
+        # self.auto_start = True
+        # self.pause = False
+        self.worker_pid = 0
 
         def setValidators():
             self.minprice.setValidator(self.onlyInt)
@@ -41,7 +42,7 @@ class MainWindow(QMainWindow, Window):
             self.a_item.setValidator(self.onlyInt)
             self.startrow_lb.setValidator(self.onlyInt)
             self.delayt.setValidator(self.onlyInt)
-            self.split_lb.setValidator(self.onlyInt)
+            # self.split_lb.setValidator(self.onlyInt)
 
         setValidators()
         self.minprice.textChanged.connect(self.s_m1_p)
@@ -52,32 +53,32 @@ class MainWindow(QMainWindow, Window):
         self.startrow_lb.textChanged.connect(self.s_sr)
         self.filename_lb.textChanged.connect(self.set_filename)
         self.delayt.textChanged.connect(self.sd)
-        self.split_lb.textChanged.connect(self.ss)
-        self.checkBox.stateChanged.connect(self.set_as)
+        # self.split_lb.textChanged.connect(self.ss)
+        # self.checkBox.stateChanged.connect(self.set_as)
 
         self.status.setStyleSheet("Color : green")
         self.pushButton.clicked.connect(self.start)
         self.pausebtn.clicked.connect(self.pauseF)
-        self.splitfile.clicked.connect(self.split)
+        # self.splitfile.clicked.connect(self.split)
         self.file_button.clicked.connect(self.select_file)
         self.file_button_2.clicked.connect(self.select_dir)
         self.pausebtn.setEnabled(False)
-        self.pushButton.setEnabled(False)
+        # self.pushButton.setEnabled(False)
 
         self.thread, self.worker = None, None
         self.total_items = 0
         self.consecutive_skips = 0
         self.last_row = 0
         self.count = 0
+        # self.splitfile.setEnabled(False)
 
     def init_globals(self):
         global log, Excel, file_dir
         file_dir = self.t_file_dir + "\\log\\"
         log = Logger(filedir=file_dir, name="main").logger
-        excel.log = Logger(filedir=file_dir, name="excel").logger
-        Excel = excel.Excel()
-        webdriver.log = Logger(filedir=file_dir, name="webdriver").logger
+        Excel = excel.Excel(file_dir)
 
+    """
     def split(self):
         self.init_globals()
         self.splitfile.setEnabled(False)
@@ -110,30 +111,44 @@ class MainWindow(QMainWindow, Window):
         log.info(f"File: {self.o_file_dir}; total_items={self.total_items}")
 
         self.thread.start()
+    """
 
     def start(self) -> None:
         self.pushButton.setEnabled(False)
-        self.pausebtn.setEnabled(True)
-        self.thread = QThread()
+        # self.pausebtn.setEnabled(True)
+        self.init_globals()
         self.worker = Worker()
-        self.worker.moveToThread(self.thread)
 
-        self.thread.started.connect(self.worker.run)
-        # noinspection PyUnresolvedReferences
-        self.worker.finished.connect(self.thread.quit)
-        # noinspection PyUnresolvedReferences
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
-        self.pause = False
-        log.info(f"Thread Started; start_row={self.start_row}, delay={self.delay}, split={self.splits}")
+        Excel.set_directory(self.o_file_dir, self.t_file_dir, self.filename)
+        if not self.o_file_dir:
+            self.warning_error01()
+            return
+        if not self.t_file_dir:
+            self.warning_error02()
+            return
+
+        s = int(self.start_row)
+        while True:
+            if not Excel.read_sheet[f'A{s}'].value and Excel.read_sheet[f'A{s}'].value != 0:
+                self.total_items = s - int(self.start_row)
+                break
+            s += 1
+        Excel.index_range = range(int(self.start_row), int(self.start_row) + self.total_items)
+        log.info(f"File: {self.o_file_dir}; total_items={self.total_items}")
+
+        # self.pause = False
+        log.info(f"Thread Started; start_row={self.start_row}, delay={self.delay}")
         self.current_label.setText(f"Current {self.last_row}/{self.total_items}")
-        self.thread.start()
+        self.worker.start()
 
     def pauseF(self):
         self.pausebtn.setEnabled(False)
         self.pushButton.setEnabled(True)
-        self.pause = True
-        MW.set_status("red", "Pausing")
+        # self.pause = True
+        MW.set_status("blue", "Paused")
+        MW.startrow_lb.setText(str(MW.last_row))
+        MW.start_row = int(MW.last_row)
+        self.worker.quit()  # TODO: not working
 
     def select_file(self):
         file_filter = "Excel File (*.xlsx)"
@@ -186,15 +201,17 @@ class MainWindow(QMainWindow, Window):
         value = self.delayt.text()
         self.delay = int(value if value != '' else 0)
 
+    """
     def ss(self):
         value = self.split_lb.text()
         self.splits = int(value if value != '' else 0)
-
+    
     def set_as(self, state):
         if state == Qt.checked:
             self.auto_start = True
         else:
             self.auto_start = False
+    """
 
     def set_filename(self):
         self.filename = self.filename_lb.text()
@@ -214,53 +231,55 @@ class MainWindow(QMainWindow, Window):
         self.status.setText(msg)
 
 
-class Worker(QObject):
-    finished = pyqtSignal()
-
+class Worker(QThread):
     def __init__(self):
         super().__init__()
         self.WD = None
         self.signal = webdriver.Signal()
+        log.info("Worker Thread Initiated")
 
     def run(self):
         for cnt, row in enumerate(range(int(MW.start_row), int(MW.start_row) + MW.total_items), start=1):
-            if MW.pause:
-                try:
-                    self.WD.close_driver()
-                    del self.WD
-                except AttributeError:
-                    pass
-                except NameError:
-                    pass
-                MW.set_status("blue", "Idle")
-                MW.start_row = row
-                MW.startrow_lb.setText(str(row))
             if cnt % 5 == 1:
                 try:
                     self.WD.close_driver()
-                    del self.WD
                 except AttributeError:
                     pass
 
                 # if cnt != 1:
                     # time.sleep(MW.delay/5)
-                self.WD = webdriver.WebDriver()
-                self.signal.signal_status.connect(MW.set_status)
 
-            part_row = row - (MW.splits + 6) * (Excel.current_file - 1)
-            res = self.main(row, part_row)
+                if cnt == 1:
+                    self.WD = webdriver.WebDriver(file_dir)
+                    self.WD.config_log()
+                self.WD.open_driver()
+                self.signal.signal_status.connect(MW.set_status)
+                for i in Excel.skipped_list:
+                    self.main(i, i, skip=True)
+                Excel.skipped_list = []
+
+            if cnt % 10 == 1:
+                Excel.delete_blanks(MW.start_row, row-1)
+            # part_row = row - (MW.splits + 6) * (Excel.current_file - 1)
+            res = self.main(row, row)
             if res["response_code"] == 3:
-                # noinspection PyUnresolvedReferences
-                self.finished.emit()
+                MW.pushButton.setEnabled(True)
+                MW.pushButton.setEnabled(False)
+                self.quit()
+                self.wait(2000)
                 return
+            """
             elif res["response_code"] == 2 and cnt % 5 != 0:
-                self.WD = webdriver.WebDriver()
+                self.WD.open_driver()
                 self.signal.signal_status.connect(MW.set_status)
-        # noinspection PyUnresolvedReferences
-        self.finished.emit()
+            """
 
-    def main(self, row, part_row) -> dict:
-        res = self.wd_data(row, part_row)
+        log.info("End of the Program")
+        self.quit()
+        self.wait(2000)
+
+    def main(self, row, part_row, skip: bool = False) -> dict:
+        res = self.wd_data(row, part_row, skip)
         MW.count += 1
 
         if res["response_code"] == 3:
@@ -268,37 +287,41 @@ class Worker(QObject):
             return res
         elif res["response_code"] in (1, 2):
             return res
-        MW.last_row = row
+        if not skip:
+            MW.last_row = row
         # grab a random time float
         sleep_time = float(str(time.time_ns())[12] + '.' + str(time.time_ns())[13])
         time.sleep(int(sleep_time))
 
         return {"response_code": 100}
 
-    def wd_data(self, row, part_row):
+    def wd_data(self, row, part_row, skip):
+        pass
+        """
         if MW.count == MW.splits:
             Excel.delete_skips()
             Excel.current_file += 1
             Excel.setup_now_sheet()
-
-        d = self.WD.main(part_row, MW.p_i, Excel.now_sheet, Excel.row_to_index(row), MW.min_p, MW.min_b, MW.min_b_e, MW.a_i)
+        """
+        d = self.WD.main(part_row, MW.p_i, Excel.read_sheet, Excel.row_to_index(row), MW.min_p, MW.min_b, MW.min_b_e, MW.a_i)
         if d["response_code"] != 100:
-            Excel.skipped_list.append(part_row)
-            MW.consecutive_skips += 1
-            if MW.consecutive_skips == 2:
-                log.info(f"2 consecutive fails - sleeping for {MW.delay} seconds.")
-                MW.set_status("red", "Sleeping")
-                self.WD.close_driver()
-                del self.WD
-                time.sleep(int(MW.delay))
+            if not skip:
+                Excel.skipped_list.append(part_row)
+                MW.consecutive_skips += 1
+                if MW.consecutive_skips == 2:
+                    log.info(f"2 consecutive fails - sleeping for {MW.delay} seconds.")
+                    MW.set_status("red", "Sleeping")
+                    self.WD.close_driver()
+                    del self.WD
+                    time.sleep(int(MW.delay))
+                    MW.set_status("green", "Running")
+                    return {"response_code": 2}
+                if MW.consecutive_skips > 2:
+                    MW.startrow_lb.setText(str(row-3))
+                    MW.start_row = int(row) - 3
+                    MW.warning_error03(timestamp())
+                    return {"response_code": 3}
                 MW.set_status("green", "Running")
-                return {"response_code": 2}
-            if MW.consecutive_skips > 2:
-                MW.startrow_lb.setText(str(row-3))
-                MW.start_row = int(row) - 3
-                MW.warning_error03(timestamp())
-                return {"response_code": 3}
-            MW.set_status("green", "Running")
 
             return {"response_code": 1}
 
@@ -309,6 +332,7 @@ class Worker(QObject):
         return {"response_code": 100}
 
 
+"""
 class Worker2(QObject):
     finished = pyqtSignal()
 
@@ -326,6 +350,7 @@ class Worker2(QObject):
             MW.start()
         # noinspection PyUnresolvedReferences
         self.finished.emit()
+"""
 
 
 def timestamp() -> str:

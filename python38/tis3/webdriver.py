@@ -15,7 +15,6 @@ from urllib import parse
 from PyQt5.QtCore import pyqtSignal, QObject
 from logger import Logger
 
-log = Logger('').logger
 # server_log = Logger("selenium.webdriver.remote.remote_connection").logger
 # server_log.setLevel(20)
 
@@ -29,24 +28,12 @@ class Signal(QObject):
 
 
 class WebDriver:
-    def __init__(self):
+    def __init__(self, fd):
         # subprocess.Popen(r'C:\Program Files\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
-        subprocess.Popen(r'C:\Program Files\Google\Chrome Beta\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
-        option = webdriver.ChromeOptions()
-        option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
-        option.add_argument('window-size=100x100')
-        option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
-
-        if getattr(sys, 'frozen', False):
-            chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
-            self.chrome_service = ChromeService(chromedriver_path)
-        else:
-            self.chrome_service = ChromeService("chromedriver.exe")
-        self.chrome_service.creationflags = CREATE_NO_WINDOW
-        self.driver = webdriver.Chrome(service=self.chrome_service, options=option)
-        self.action = ActionChains(self.driver)
-        log.info("Webdriver Initiated")
-
+        self.option = webdriver.ChromeOptions()
+        self.option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        self.option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
+        self.fd = fd
         """time.sleep(2)
         self.driver.get("https://world.taobao.com/wow/z/oversea/SEO-SEM/ovs-pc-login")
         wait = WebDriverWait(self.driver, 5)
@@ -58,6 +45,21 @@ class WebDriver:
         self.try_again_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[1]/div[2]/div"
         self.login_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[2]/div[2]/div"
         self.verify_button_path = "//*[@id=\"ap-sbi-taobao-result\"]/div/div[2]/div/div[3]/div[2]/div"
+
+    def config_log(self):
+        self.log = Logger(self.fd, "webdriver").logger
+
+    def open_driver(self):
+        subprocess.Popen(r'C:\Program Files\Google\Chrome Beta\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
+        if getattr(sys, 'frozen', False):
+            chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
+            self.chrome_service = ChromeService(chromedriver_path)
+        else:
+            self.chrome_service = ChromeService("chromedriver.exe")
+        self.chrome_service.creationflags = CREATE_NO_WINDOW
+        self.driver = webdriver.Chrome(service=self.chrome_service, options=self.option)
+        self.action = ActionChains(self.driver)
+        self.log.info("Webdriver Initiated")
 
     def main(self, row, limit, sheet, index, mp, ms, mse, al):
         """
@@ -79,7 +81,7 @@ class WebDriver:
         Signal().emit_signal("green", "Searching")
         raw_data = self.search(limit)
         if raw_data["response_code"] == 1:
-            log.info(f"Index: {index} Skipped")
+            self.log.info(f"Index: {index} Skipped")
             return {"response_code": 1, "index": index}
         Signal().emit_signal("green", "Fetching Data")
         return self.add_link([index, self.analyze(raw_data, mp, ms, mse, al)])
@@ -100,7 +102,6 @@ class WebDriver:
 
     def taobao_extension(self, limit):
         self.action.move_to_element(self.driver.find_element(By.XPATH, f"/html/body/img")).perform()
-        time.sleep(0.05)
         try:
             self.driver.find_element(By.XPATH, self.search_button_path).click()
         except selenium.common.exceptions.ElementNotInteractableException:
@@ -114,7 +115,19 @@ class WebDriver:
             _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
             time.sleep(2)
         except selenium.common.exceptions.TimeoutException:
-            log.error('Unknown Error: selenium.common.exceptions.TimeoutException')
+            try:
+                self.driver.find_element(By.XPATH, self.try_again_button_path).click()
+                try:
+                    wait = WebDriverWait(self.driver, 10)
+                    _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
+                    time.sleep(2)
+                except selenium.common.exceptions.TimeoutException:
+                    self.log.error('Unknown Error: selenium.common.exceptions.TimeoutException')
+                    return
+            except selenium.common.exceptions.NoSuchElementException:
+                pass
+            except selenium.common.exceptions.ElementNotInteractableException:
+                pass
             return
 
         return self.fetch(limit)
@@ -219,7 +232,7 @@ class WebDriver:
             # img_links.append(imgUrl)
             self.download_img(img_path, os.getcwd() + rf"\temp\img\{data[0]}_{i}.jpg")
 
-        log.info(f"Index: {data[0]} Fetched")
+        self.log.info(f"Index: {data[0]} Fetched")
         output = [data[0], [links[0], links[1], data[1][1][1], data[1][1][0], data[1][2][1], data[1][2][0]], extra_data]
         return {"response_code": 100, "data": output}
 
@@ -274,7 +287,7 @@ class WebDriver:
         try:
             self.driver.switch_to.window(tabs[0])
         except selenium.common.exceptions.InvalidSessionIdException:
-            log.error("Invalid Session ID")
+            self.log.error("Invalid Session ID")
 
     def close_tab_from_back(self, count=1):
         tabs = self.driver.window_handles

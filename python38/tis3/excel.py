@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # tis/excel.py
 
-import os, openpyxl, shutil, string
+import os, openpyxl, shutil  # , string
 from openpyxl.drawing.image import Image
 from openpyxl_image_loader import SheetImageLoader
 from logger import Logger
 
-log = Logger('').logger
 
-
-class Excel: # TODO: Prompt if already file exists
-    def __init__(self):
+class Excel:  # TODO: Prompt if file already exists
+    def __init__(self, fd):
+        global log
+        log = Logger(fd, "excel").logger
         if not os.path.isdir(os.getcwd() + "\\temp\\img\\"):
             os.makedirs(os.getcwd() + "\\temp\\img")
         self.worksheet, self.doc, self.ws, self.read_sheet, self.now_sheet = None, None, None, None, None
@@ -106,12 +106,16 @@ class Excel: # TODO: Prompt if already file exists
                 log.info(f"Added item_{index} to high-sales; total: {self.extra}")
         self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
 
-    def delete_skips(self):
+    def delete_blanks(self, start, end):
         self.setup_sheet()
-        for skips in self.skipped_list:
-            self.ws.delete_rows(skips, 1)
+
+        c = 0
+        for row in range(start, end + 1):
+            r = row + c
+            if not self.ws[f'K{r}'].value:
+                self.ws.delete_rows(r, 1)
+                c -= 1
         self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
-        log.info(f"Saved {self.filename}_{self.current_file:02}.xlsx")
 
     def create_extra_sheet(self):
         self.setup_new_sheet()
@@ -148,6 +152,7 @@ class Excel: # TODO: Prompt if already file exists
     def row_to_index(self, row: int) -> int:
         return int(self.read_sheet[f'A{row}'].value)
 
+    """
     @staticmethod
     def delete_images(start_row, amount, sheet):
         sheet_images = sheet._images[:]
@@ -212,3 +217,4 @@ class Excel: # TODO: Prompt if already file exists
             os.makedirs(os.getcwd() + "\\temp\\img")
 
             self.setup_now_sheet()
+    """
