@@ -4,7 +4,7 @@
 import os, sys, datetime, time, shutil
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIntValidator
-from PyQt5.QtCore import QThread, pyqtSlot
+from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot  # TODO: check if importing pyqtsignal resolves error (not emitting signal)
 
 # Local Imports
 from form import Window
@@ -15,6 +15,7 @@ import webdriver
 # TODO: pause button function (thread killing)
 # TODO: notify via kakaotalk or firebase when error occurs (or process ends)
 # TODO: Drag method
+# TODO: Update form.py
 
 
 class MainWindow(QMainWindow, Window):
@@ -24,13 +25,13 @@ class MainWindow(QMainWindow, Window):
         self.onlyInt = QIntValidator()
         self.o_file_dir = ''
         self.t_file_dir = ''
-        self.filename = "file"
+        self.filename = ''
         self.e_saved = 0
         self.min_p = 0
         self.min_b = 0
         self.min_b_e = 200
         self.p_i = 30
-        self.a_i = 10
+        self.a_i = 6
         self.start_row = 2
         self.delay = 120
         # self.splits = 100

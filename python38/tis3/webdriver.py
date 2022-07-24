@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # tis3/webdriver.py
 
-import subprocess, os, sys, time
+import subprocess, os, sys, time, pyautogui
 import selenium.common.exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -118,24 +118,39 @@ class WebDriver:
             time.sleep(0.05)
             self.driver.find_element(By.XPATH, self.search_button_path).click()
         try:
-            wait = WebDriverWait(self.driver, 15)
+            wait = WebDriverWait(self.driver, 20)
             _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
             time.sleep(4)
         except selenium.common.exceptions.TimeoutException:
             try:
-                self.driver.find_element(By.XPATH, self.try_again_button_path).click()
+                wait = WebDriverWait(self.driver, 15)
+                _ = wait.until(ec.element_to_be_clickable((By.XPATH, self.verify_button_path)))
+                self.driver.find_element(By.XPATH, self.verify_button_path).click()
+                self.drag()
+                self.close_tab_from_back()
                 try:
-                    wait = WebDriverWait(self.driver, 10)
+                    wait = WebDriverWait(self.driver, 20)
                     _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
                     time.sleep(4)
                 except selenium.common.exceptions.TimeoutException:
-                    self.log.error('Unknown Error: selenium.common.exceptions.TimeoutException')
+                    self.log.error("Loading Error")
                     return
-            except selenium.common.exceptions.NoSuchElementException:
-                pass
-            except selenium.common.exceptions.ElementNotInteractableException:
-                pass
-            return
+            except selenium.common.exceptions.TimeoutException:
+                try:
+                    wait = WebDriverWait(self.driver, 5)
+                    _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
+                    time.sleep(4)
+                except selenium.common.exceptions.TimeoutException:
+                    try:
+                        wait = WebDriverWait(self.driver, 10)
+                        _ = wait.until(ec.element_to_be_clickable((By.XPATH, self.try_again_button_path)))
+                        self.driver.find_element(By.XPATH, self.try_again_button_path).click()
+                        wait = WebDriverWait(self.driver, 20)
+                        _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
+                        time.sleep(4)
+                    except selenium.common.exceptions.TimeoutException:
+                        self.log.error("Loading Error")
+                        return
 
         return self.fetch(limit)
 
@@ -249,6 +264,13 @@ class WebDriver:
         self.driver.find_element(By.XPATH, close_button).click()
         time.sleep(0.5)
     """
+
+    @staticmethod
+    def drag():
+        time.sleep(5)
+        pyautogui.moveTo(490, 620)
+        pyautogui.drag(370, 20, 2, pyautogui.easeInQuad, button="left")
+        time.sleep(5)
 
     def download_img(self, css_path, file_path):
         with open(file_path, "wb") as file:
