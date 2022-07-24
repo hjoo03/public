@@ -4,18 +4,16 @@
 import os, sys, datetime, time, shutil
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIntValidator
-from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot  # TODO: check if importing pyqtsignal resolves error (not emitting signal)
+from PyQt5.QtCore import QThread, pyqtSlot
 
 # Local Imports
 from form import Window
 from logger import Logger
 import excel
-import webdriver
+from webdriver import WebDriver, Signal
 
 # TODO: pause button function (thread killing)
 # TODO: notify via kakaotalk or firebase when error occurs (or process ends)
-# TODO: Drag method
-# TODO: Update form.py
 
 
 class MainWindow(QMainWindow, Window):
@@ -37,7 +35,6 @@ class MainWindow(QMainWindow, Window):
         # self.splits = 100
         # self.auto_start = True
         # self.pause = False
-        self.worker_pid = 0
 
         def setValidators():
             self.minprice.setValidator(self.onlyInt)
@@ -149,11 +146,12 @@ class MainWindow(QMainWindow, Window):
     def pauseF(self):
         self.pausebtn.setEnabled(False)
         self.pushButton.setEnabled(True)
-        # self.pause = True
         MW.set_status("blue", "Paused")
         MW.startrow_lb.setText(str(MW.last_row))
         MW.start_row = int(MW.last_row)
         self.worker.quit()
+        self.worker.wait(2000)
+        del self.worker
 
     def select_file(self):
         file_filter = "Excel File (*.xlsx)"
@@ -240,13 +238,13 @@ class Worker(QThread):
     def __init__(self):
         super().__init__()
         self.WD = None
-        self.signal = webdriver.Signal()
+        self.signal = Signal()
         log.info("Worker Thread Initiated")
 
     def run(self):
         for cnt, row in enumerate(range(int(MW.start_row), int(MW.start_row) + MW.total_items), start=1):
             if cnt == 1:
-                self.WD = webdriver.WebDriver(file_dir)
+                self.WD = WebDriver(file_dir)
                 self.WD.config_log()
                 self.WD.open_driver()
                 self.signal.signal_status.connect(MW.set_status)
@@ -273,8 +271,10 @@ class Worker(QThread):
         shutil.copy(Excel.tmp_h, Excel.res_h)
         os.remove(Excel.tmp_h)
         log.info("End of the Program")
+        self.WD.close_driver()
         self.quit()
         self.wait(2000)
+        sys.exit()
 
     def main(self, row, part_row, skip: bool = False) -> dict:
         res = self.wd_data(row, part_row, skip)

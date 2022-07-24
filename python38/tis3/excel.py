@@ -22,17 +22,21 @@ class Excel:
         self.filename = ''
         self.index_range = []
         self.skipped_list = []
-        self.tmp = os.getcwd() + "\\_temp.xlsx"
-        self.tmp_h = os.getcwd() + "\\_h_temp.xlsx"
-        self.res = self.out_directory + self.filename + ".xlsx"
-        self.res_h = self.out_directory + self.filename + "_h.xlsx"
+        self.tmp = ""
+        self.tmp_h = ""
+        self.res = ""
+        self.res_h = ""
 
     def set_directory(self, in_dir, out_dir, filename):
         self.in_directory = in_dir
         self.out_directory = out_dir + '\\'
         self.filename = filename
+        self.tmp = os.getcwd() + "\\_temp.xlsx"
+        self.tmp_h = os.getcwd() + "\\_h_temp.xlsx"
         self.read_sheet = openpyxl.load_workbook(self.in_directory).active
         self.create_template()
+        self.res = self.out_directory + self.filename + ".xlsx"
+        self.res_h = self.out_directory + self.filename + "_h.xlsx"
 
     def setup_sheet(self):
         self.doc = openpyxl.load_workbook(self.tmp)

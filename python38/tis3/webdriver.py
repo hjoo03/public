@@ -268,7 +268,7 @@ class WebDriver:
     @staticmethod
     def drag():
         time.sleep(5)
-        pyautogui.moveTo(490, 620)
+        pyautogui.moveTo(490, 580)
         pyautogui.drag(370, 20, 2, pyautogui.easeInQuad, button="left")
         time.sleep(5)
 
