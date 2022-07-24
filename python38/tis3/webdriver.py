@@ -68,6 +68,11 @@ class WebDriver:
         time.sleep(5)
         self.log.info("Webdriver Configuration Completed")
 
+    def check_block(self) -> bool:
+        self.driver.get("https://shop-phinf.pstatic.net/20210215_231/1613380295198ISOkx_JPEG/14516078878939416_96934398.jpg?type=m120")
+        res = self.search(2)
+        return True if res["response_code"] == 1 else False
+
     def main(self, row, limit, sheet, index, mp, ms, mse, al):
         """
         get request image file to the driver

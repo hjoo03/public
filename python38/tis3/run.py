@@ -259,12 +259,21 @@ class Worker(QThread):
             res = self.main(row, row)
             if res["response_code"] == 3:
                 MW.pushButton.setEnabled(True)
-                MW.pushButton.setEnabled(False)
                 self.quit()
                 self.wait(2000)
                 return
             elif res["response_code"] == 2:
-                self.WD.open_driver()
+                if self.WD.check_block():
+                    MW.set_status("red", "Sleeping")
+                    self.WD.close_driver()
+                    log.info(f"Blocked! Sleeping for {MW.delay} seconds.")
+                    time.sleep(int(MW.delay))
+                    MW.set_status("green", "Running")
+                    self.WD.open_driver()
+                else:
+                    log.info("Not blocked. Rerun main thread.")
+                    Excel.skipped_list.pop()
+                    MW.consecutive_skips = 0
 
         # Excel.delete_blanks(2, MW.total_items + 1)
         shutil.copy(Excel.tmp, Excel.res)
@@ -308,11 +317,7 @@ class Worker(QThread):
                 Excel.skipped_list.append(part_row)
                 MW.consecutive_skips += 1
                 if MW.consecutive_skips == 2:
-                    log.info(f"2 consecutive fails - sleeping for {MW.delay} seconds.")
-                    MW.set_status("red", "Sleeping")
-                    self.WD.close_driver()
-                    time.sleep(int(MW.delay))
-                    MW.set_status("green", "Running")
+                    log.info(f"2 consecutive fails - Checking taobao block.")
                     return {"response_code": 2}
                 if MW.consecutive_skips > 2:
                     MW.startrow_lb.setText(str(row-3))
