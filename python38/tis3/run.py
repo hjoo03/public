@@ -15,7 +15,6 @@ import webdriver
 # TODO: write _temp at the file working through
 # TODO: pause button function (thread killing)
 # TODO: notify via kakaotalk or firebase when error occurs (or process ends)
-# TODO: simplify filename
 
 
 class MainWindow(QMainWindow, Window):

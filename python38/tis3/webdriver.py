@@ -120,14 +120,14 @@ class WebDriver:
         try:
             wait = WebDriverWait(self.driver, 15)
             _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
-            time.sleep(2)
+            time.sleep(4)
         except selenium.common.exceptions.TimeoutException:
             try:
                 self.driver.find_element(By.XPATH, self.try_again_button_path).click()
                 try:
                     wait = WebDriverWait(self.driver, 10)
                     _ = wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, self.path_analyzer(1)[0])))
-                    time.sleep(2)
+                    time.sleep(4)
                 except selenium.common.exceptions.TimeoutException:
                     self.log.error('Unknown Error: selenium.common.exceptions.TimeoutException')
                     return

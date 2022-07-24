@@ -7,7 +7,7 @@ from openpyxl_image_loader import SheetImageLoader
 from logger import Logger
 
 
-class Excel:  # TODO: Prompt if file already exists
+class Excel:
     def __init__(self, fd):
         global log
         log = Logger(fd, "excel").logger
@@ -17,7 +17,6 @@ class Excel:  # TODO: Prompt if file already exists
         self.ex_exists = False
         self.extra = 0
         self.finished_items = 0
-        self.current_file = 1
         self.in_directory = ''
         self.out_directory = ''
         self.filename = ''
@@ -32,7 +31,7 @@ class Excel:  # TODO: Prompt if file already exists
         self.create_template()
 
     def setup_sheet(self):
-        self.doc = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+        self.doc = openpyxl.load_workbook(self.out_directory + self.filename + ".xlsx")
         self.ws = self.doc.active
 
     def setup_extra_sheet(self):
@@ -44,7 +43,7 @@ class Excel:  # TODO: Prompt if file already exists
         self.ws = self.doc.active
 
     def setup_now_sheet(self):
-        self.now_sheet = openpyxl.load_workbook(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx").active
+        self.now_sheet = openpyxl.load_workbook(self.out_directory + self.filename + ".xlsx").active
 
     def write(self, data: dict, row: int):
         """
@@ -73,10 +72,10 @@ class Excel:  # TODO: Prompt if file already exists
         self.ws[f'L{row}'].style = "Hyperlink"
         self.ws[f'M{row}'] = f"{info[2]}/{info[3]}"
         self.ws[f'N{row}'] = f"{info[4]}/{info[5]}"
-        self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+        self.doc.save(self.out_directory + self.filename + "_.xlsx")
         self.finished_items += 1
 
-        log.info(f"Added item_{index} to file {self.current_file:02}; total: {self.finished_items}")
+        log.info(f"Wrote item_{index} at row {row}; total: {self.finished_items}")
         shutil.rmtree(os.getcwd() + "\\temp\\img\\")
         os.makedirs(os.getcwd() + "\\temp\\img")
 
@@ -104,7 +103,7 @@ class Excel:  # TODO: Prompt if file already exists
                 self.ws[f'E{self.extra + 2}'] = d[3]
                 self.extra += 1
                 log.info(f"Added item_{index} to high-sales; total: {self.extra}")
-        self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
+        self.doc.save(self.out_directory + self.filename + "_h.xlsx")
 
     def delete_blanks(self, start, end):
         self.setup_sheet()
@@ -116,7 +115,7 @@ class Excel:  # TODO: Prompt if file already exists
                 self.delete_images(r, 1, self.ws)
                 self.ws.delete_rows(r, 1)
                 c -= 1
-        self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+        self.doc.save(self.out_directory + self.filename + ".xlsx")
 
     def create_extra_sheet(self):
         self.setup_new_sheet()
@@ -134,7 +133,7 @@ class Excel:  # TODO: Prompt if file already exists
         self.ws['M1'] = "구매수/가격1"
         self.ws['N1'] = "구매수/가격2"
         self.ws['O1'] = "타오바오 상품명"
-        self.doc.save(self.out_directory + self.filename + f"_{self.current_file:02}.xlsx")
+        self.doc.save(self.out_directory + self.filename + ".xlsx")
 
     @staticmethod
     def extract_image(index, cell, sheet):  # openpyxl_image_loader.SheetImageLoader
