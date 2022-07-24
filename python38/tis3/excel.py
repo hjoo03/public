@@ -13,7 +13,7 @@ class Excel:
         log = Logger(fd, "excel").logger
         if not os.path.isdir(os.getcwd() + "\\temp\\img\\"):
             os.makedirs(os.getcwd() + "\\temp\\img")
-        self.worksheet, self.doc, self.ws, self.read_sheet, self.now_sheet = None, None, None, None, None
+        self.worksheet, self.doc, self.ws, self.read_sheet = None, None, None, None
         self.ex_exists = False
         self.extra = 0
         self.finished_items = 0
@@ -22,6 +22,10 @@ class Excel:
         self.filename = ''
         self.index_range = []
         self.skipped_list = []
+        self.tmp = os.getcwd() + "\\_temp.xlsx"
+        self.tmp_h = os.getcwd() + "\\_h_temp.xlsx"
+        self.res = self.out_directory + self.filename + ".xlsx"
+        self.res_h = self.out_directory + self.filename + "_h.xlsx"
 
     def set_directory(self, in_dir, out_dir, filename):
         self.in_directory = in_dir
@@ -31,19 +35,16 @@ class Excel:
         self.create_template()
 
     def setup_sheet(self):
-        self.doc = openpyxl.load_workbook(self.out_directory + self.filename + ".xlsx")
+        self.doc = openpyxl.load_workbook(self.tmp)
         self.ws = self.doc.active
 
     def setup_extra_sheet(self):
-        self.doc = openpyxl.load_workbook(self.out_directory + self.filename + "_high-sales.xlsx")
+        self.doc = openpyxl.load_workbook(self.tmp_h)
         self.ws = self.doc.active
 
     def setup_new_sheet(self):
         self.doc = openpyxl.Workbook()
         self.ws = self.doc.active
-
-    def setup_now_sheet(self):
-        self.now_sheet = openpyxl.load_workbook(self.out_directory + self.filename + ".xlsx").active
 
     def write(self, data: dict, row: int):
         """
@@ -72,7 +73,7 @@ class Excel:
         self.ws[f'L{row}'].style = "Hyperlink"
         self.ws[f'M{row}'] = f"{info[2]}/{info[3]}"
         self.ws[f'N{row}'] = f"{info[4]}/{info[5]}"
-        self.doc.save(self.out_directory + self.filename + "_.xlsx")
+        self.doc.save(self.tmp)
         self.finished_items += 1
 
         log.info(f"Wrote item_{index} at row {row}; total: {self.finished_items}")
@@ -103,7 +104,7 @@ class Excel:
                 self.ws[f'E{self.extra + 2}'] = d[3]
                 self.extra += 1
                 log.info(f"Added item_{index} to high-sales; total: {self.extra}")
-        self.doc.save(self.out_directory + self.filename + "_h.xlsx")
+        self.doc.save(self.tmp_h)
 
     def delete_blanks(self, start, end):
         self.setup_sheet()
@@ -115,12 +116,12 @@ class Excel:
                 self.delete_images(r, 1, self.ws)
                 self.ws.delete_rows(r, 1)
                 c -= 1
-        self.doc.save(self.out_directory + self.filename + ".xlsx")
+        self.doc.save(self.tmp)
 
     def create_extra_sheet(self):
         self.setup_new_sheet()
         self.ws.append(["Index", "타오바오 상품명", "링크", "구매수", "가격"])
-        self.doc.save(self.out_directory + self.filename + "_high-sales.xlsx")
+        self.doc.save(self.tmp_h)
         self.ex_exists = True
 
     def create_template(self):
@@ -133,7 +134,7 @@ class Excel:
         self.ws['M1'] = "구매수/가격1"
         self.ws['N1'] = "구매수/가격2"
         self.ws['O1'] = "타오바오 상품명"
-        self.doc.save(self.out_directory + self.filename + ".xlsx")
+        self.doc.save(self.tmp)
 
     @staticmethod
     def extract_image(index, cell, sheet):  # openpyxl_image_loader.SheetImageLoader

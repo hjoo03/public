@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # tis/run.py
 
-import os, sys, datetime, time
+import os, sys, datetime, time, shutil
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import QThread, pyqtSlot
@@ -12,9 +12,9 @@ from logger import Logger
 import excel
 import webdriver
 
-# TODO: write _temp at the file working through
 # TODO: pause button function (thread killing)
 # TODO: notify via kakaotalk or firebase when error occurs (or process ends)
+# TODO: Drag method
 
 
 class MainWindow(QMainWindow, Window):
@@ -244,16 +244,6 @@ class Worker(QThread):
 
     def run(self):
         for cnt, row in enumerate(range(int(MW.start_row), int(MW.start_row) + MW.total_items), start=1):
-            """
-            if cnt % 5 == 1:
-                try:
-                    self.WD.close_driver()
-                except AttributeError:
-                    pass
-            """
-            # if cnt != 1:
-            # time.sleep(MW.delay/5)
-
             if cnt == 1:
                 self.WD = webdriver.WebDriver(file_dir)
                 self.WD.config_log()
@@ -265,8 +255,6 @@ class Worker(QThread):
                     self.main(i, i, skip=True)
                 Excel.skipped_list = []
 
-            if cnt % 10 == 1 and cnt != 1:
-                Excel.delete_blanks(MW.start_row, row-1)
             # part_row = row - (MW.splits + 6) * (Excel.current_file - 1)
             res = self.main(row, row)
             if res["response_code"] == 3:
@@ -277,12 +265,12 @@ class Worker(QThread):
                 return
             elif res["response_code"] == 2:
                 self.WD.open_driver()
-            """
-            elif res["response_code"] == 2 and cnt % 5 != 0:
-                self.WD.open_driver()
-                self.signal.signal_status.connect(MW.set_status)
-            """
 
+        Excel.delete_blanks(2, MW.total_items + 1)
+        shutil.copy(Excel.tmp, Excel.res)
+        os.remove(Excel.tmp)
+        shutil.copy(Excel.tmp_h, Excel.res_h)
+        os.remove(Excel.tmp_h)
         log.info("End of the Program")
         self.quit()
         self.wait(2000)
