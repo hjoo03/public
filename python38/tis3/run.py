@@ -14,6 +14,7 @@ from webdriver import WebDriver, Signal
 
 # TODO: pause button function (thread killing)
 # TODO: notify via kakaotalk or firebase when error occurs (or process ends)
+# TODO: activate move image with its cell -> Excel().delete_blanks()
 
 
 class MainWindow(QMainWindow, Window):
@@ -265,7 +266,7 @@ class Worker(QThread):
             elif res["response_code"] == 2:
                 self.WD.open_driver()
 
-        Excel.delete_blanks(2, MW.total_items + 1)
+        # Excel.delete_blanks(2, MW.total_items + 1)
         shutil.copy(Excel.tmp, Excel.res)
         os.remove(Excel.tmp)
         shutil.copy(Excel.tmp_h, Excel.res_h)
