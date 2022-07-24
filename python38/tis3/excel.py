@@ -112,11 +112,10 @@ class Excel:
 
     def delete_blanks(self, start, end):
         self.setup_sheet()
-
         c = 0
         for row in range(start, end + 1):
             r = row + c
-            if not self.ws[f'K{r}'].value:
+            if not self.ws[f'K{r}'].value and not self.ws[f'L{r}'].value:
                 self.delete_images(r, 1, self.ws)
                 self.ws.delete_rows(r, 1)
                 c -= 1
@@ -174,13 +173,21 @@ class Excel:
             while True:
                 try:
                     sheet._images.remove(_images[f'B{row}'])
+                    log.info(f"Removed Image in B{row}")
                     row += 1
                 except KeyError:
                     break
+        elif amount == 1:
+            try:
+                sheet._images.remove(_images[f'B{start_row}'])
+                log.info(f"Removed Image in B{start_row}")
+            except KeyError:
+                return
         else:
             for row in range(start_row, start_row + amount):
                 try:
                     sheet._images.remove(_images[f'B{row}'])
+                    log.info(f"Removed Image in B{row}")
                 except KeyError:
                     break
 
