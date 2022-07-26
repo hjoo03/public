@@ -137,6 +137,7 @@ class Excel:
         self.ws['M1'] = "구매수/가격1"
         self.ws['N1'] = "구매수/가격2"
         self.ws['O1'] = "타오바오 상품명"
+        self.ws.column_dimensions['J'].width = 17.63
         self.doc.save(self.tmp)
 
     @staticmethod

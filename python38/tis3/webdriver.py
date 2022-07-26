@@ -29,7 +29,6 @@ class Signal(QObject):
 
 class WebDriver:
     def __init__(self, fd):
-        # subprocess.Popen(r'C:\Program Files\Google\Chrome\Application\chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\chrometemp"')
         self.option = webdriver.ChromeOptions()
         self.option.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         self.option.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
@@ -254,7 +253,8 @@ class WebDriver:
             links.append(self.parse_url(self.driver.current_url))
             self.close_tab_from_back()
 
-            img_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({data[1][0][i]+1}) > div > div.ap-is-link.ap-product-image > img"
+            # img_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({data[1][0][i]+1}) > div > div.ap-is-link.ap-product-image > img"
+            img_path = f"#ap-sbi-alipriceTaobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({data[1][0][i]+1}) > div > div.ap-is-link.ap-product-image > img"
             # imgUrl = self.driver.find_element(By.CSS_SELECTOR, img_path).get_attribute("src")
             # img_links.append(imgUrl)
             self.download_img(img_path, os.getcwd() + rf"\temp\img\{data[0]}_{i}.jpg")
@@ -292,7 +292,9 @@ class WebDriver:
     @staticmethod
     def parse_url(url):
         if "ali_redirect.html?url" in url:
-            return parse.unquote(url[url.index("url=")+4:url.index("%26ns")], encoding="utf-8")
+            url1 = parse.unquote(url, encoding="utf-8")
+            return url1[url1.index("url=") + 4:url1.index("&union_")]
+            # return parse.unquote(url[url.index("url=")+4:url.index("%26ns")], encoding="utf-8")
         elif "member/login.html" in url:
             return url[url.index("redirect=")+9:url.index("&ns")]
         else:
@@ -300,7 +302,8 @@ class WebDriver:
 
     @staticmethod
     def path_analyzer(item_no):
-        base_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({item_no}) > div > "
+        base_path = f"#ap-sbi-alipriceTaobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({item_no}) > div > "
+        # base_path = f"#ap-sbi-taobao-result > div > div.ap-list.ap-list--gallery > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div:nth-child({item_no}) > div > "
         price = base_path + "div.ap-tb-deal-info > div.ap-product-price"
         sales = base_path + "div.ap-tb-deal-info > div.ap-tb-sales"
         title = base_path + "div.ap-is-link.ap-product-title"

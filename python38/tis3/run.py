@@ -75,9 +75,10 @@ class MainWindow(QMainWindow, Window):
         self.count = 0
         # self.splitfile.setEnabled(False)
 
-    def init_globals(self):
+    @staticmethod
+    def init_globals():
         global log, Excel, file_dir
-        file_dir = self.t_file_dir + "\\log\\"
+        file_dir = os.getcwd() + "\\log\\"
         log = Logger(filedir=file_dir, name="main").logger
         Excel = excel.Excel(file_dir)
 
@@ -299,7 +300,7 @@ class Worker(QThread):
             MW.last_row = row
         # grab a random time float
         sleep_time = float(str(time.time_ns())[12] + '.' + str(time.time_ns())[13])
-        time.sleep(int(sleep_time))
+        time.sleep(sleep_time * 2.5)
 
         return {"response_code": 100}
 
