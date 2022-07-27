@@ -53,7 +53,7 @@ class WebDriver:
         self.action = ActionChains(self.driver)
         self.log.info("Webdriver Initiated")
         time.sleep(2)
-
+        """
         self.driver.get("https://login.taobao.com/member/login.jhtml?redirectURL=https%3A%2F%2Ftaobao.com")
         wait = WebDriverWait(self.driver, 5)
         _ = wait.until(ec.visibility_of_element_located((By.XPATH, "//*[@id=\"login-form\"]/div[4]/button")))
@@ -65,6 +65,7 @@ class WebDriver:
         self.driver.get("https://shop-phinf.pstatic.net/20210215_231/1613380295198ISOkx_JPEG/14516078878939416_96934398.jpg?type=m120")
         self.taobao_extension(0)
         time.sleep(5)
+        """
         self.log.info("Webdriver Configuration Completed")
 
     def check_block(self) -> bool:
@@ -291,7 +292,7 @@ class WebDriver:
 
     @staticmethod
     def parse_url(url):
-        if "ali_redirect.html?url" in url:
+        if ".html?url" in url:
             url1 = parse.unquote(url, encoding="utf-8")
             return url1[url1.index("url=") + 4:url1.index("&union_")]
             # return parse.unquote(url[url.index("url=")+4:url.index("%26ns")], encoding="utf-8")

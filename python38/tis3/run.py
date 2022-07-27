@@ -264,6 +264,7 @@ class Worker(QThread):
                 self.wait(2000)
                 return
             elif res["response_code"] == 2:
+                """
                 if self.WD.check_block():
                     MW.set_status("red", "Sleeping")
                     self.WD.close_driver()
@@ -271,10 +272,19 @@ class Worker(QThread):
                     time.sleep(int(MW.delay))
                     MW.set_status("green", "Running")
                     self.WD.open_driver()
+                """
+                MW.set_status("red", "Sleeping")
+                self.WD.close_driver()
+                log.info(f"Blocked! Sleeping for {MW.delay} seconds.")
+                time.sleep(int(MW.delay))
+                MW.set_status("green", "Running")
+                self.WD.open_driver()
+                """
                 else:
                     log.info("Not blocked. Rerun main thread.")
                     Excel.skipped_list.pop()
                     MW.consecutive_skips = 0
+                """
 
         # Excel.delete_blanks(2, MW.total_items + 1)
         shutil.copy(Excel.tmp, Excel.res)
@@ -300,7 +310,7 @@ class Worker(QThread):
             MW.last_row = row
         # grab a random time float
         sleep_time = float(str(time.time_ns())[12] + '.' + str(time.time_ns())[13])
-        time.sleep(sleep_time * 2.5)
+        time.sleep(sleep_time * 2)
 
         return {"response_code": 100}
 
