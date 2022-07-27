@@ -49,7 +49,7 @@ class Excel:
         self.doc = openpyxl.load_workbook(self.tmp)
         self.ws = self.doc.active
 
-    def write(self, row, links, images, index):
+    def write(self, row, links, index):
         self.setup_sheet()
         img0 = Image("__temp0.png")
         img0.width, img0.height = 132, 132
@@ -81,7 +81,6 @@ class Excel:
         self.out_directory = out_dir
         self.filename = filename
         self.tmp = os.getcwd() + "\\_temp.xlsx"
-        self.create_template()
         self.res = self.out_directory + self.filename + ".xlsx"
 
     def create_template(self):
@@ -110,18 +109,20 @@ class MainWindow(QMainWindow, Ui_Window):
         self.excelFilepath = ''
         self.btn_file.clicked.connect(self.select_dir)
         self.btn_start.clicked.connect(self.start)
-        self.btn_rename.clicked.connect(self.rename)
+        self.btn_index.clicked.connect(self.index)
 
         self.btn_start.setEnabled(False)
 
-        self.loadDelay = 20
-        self.fetchDelay = 2  # TODO: fetchdelay and indexrange
-        self.indexRange = (2, 0)
+        self.loadDelay = 5
+        self.fetchDelay = 0  # TODO: indexRange
+        self.indexRange = (0, 0)
 
         self.count = 0
 
     def start(self):
         self.btn_start.setEnabled(False)
+        self.loadDelay = int(self.le_loaddelay.text())
+        self.Ex.create_template()
         if not self.indexValidator():
             self.btn_start.setEnabled(True)
             self.warning_error01()
@@ -130,6 +131,7 @@ class MainWindow(QMainWindow, Ui_Window):
             self.btn_start.setEnabled(True)
             self.warning_error02()
             return
+        self.fetchDelay = int(self.le_fetchdelay.text())
         self.worker = Worker()
         self.worker.start()
 
@@ -154,35 +156,42 @@ class MainWindow(QMainWindow, Ui_Window):
             return False
         # return True
 
-    def rename(self):
+    def index(self):
+        self.Ex = Excel()
         files = os.listdir(self.files_dir)
-        if self.skipRename.isChecked():
+        if self.skipPush.isChecked():
             for file in files:
                 if ".xlsx" not in file:
                     self.images.append(int(file[:-4]))
                 else:
                     self.excelFilepath = self.files_dir + file
         else:
+            os.system(rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
             for file in files:
                 if ".xlsx" not in file:
                     index = file[file.rindex("_")+1:file.rindex(".jpg")]
                     os.rename(self.files_dir + file, self.files_dir + f"{int(index):04}.jpg")
                     self.images.append(int(index))
+                    os.system(rf"platform-tools\adb.exe push {self.files_dir}" +
+                              f"{int(index):04}.jpg sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
                 else:
                     self.excelFilepath = self.files_dir + file
+
         self.progressBar.setRange(0, len(self.images))
         self.btn_start.setEnabled(True)
-        if self.skipRename.isChecked():
-            self.output(f"Rename Skipped; found {len(self.images)} items")
+        self.output(f"Index Done; found {len(self.images)} items")
+        if self.skipPush.isChecked():
+            self.output(f"Skipped Push")
         else:
-            self.output(f"Rename Done; found {len(self.images)} items")
-        self.btn_rename.setEnabled(False)
+            self.output(f"Pushed {len(self.images)} items")
+        self.btn_index.setEnabled(False)
 
     def output(self, msg):
         self.textBrowser.append(f"[{str(datetime.datetime.now())[5:len(str(datetime.datetime.now())) - 7]}] " + msg)
 
     def warning_error01(self):
-        QMessageBox.warning(self, "[E01] IOError", "Check Index Range!")
+        QMessageBox.warning(self, "[E01] FunctionError", "Custom Index Range is not Supported")
+        # QMessageBox.warning(self, "[E01] IOError", "Check Index Range!")
 
     def warning_error02(self):
         QMessageBox.warning(self, "[E02] IOError", "No File Directory Selected!")
@@ -194,11 +203,13 @@ class Worker(QThread):
         log.info("Worker Thread Initiated")
         self.itemCoordinates = []
         self.count = 0
-        self.Ex = Excel()
 
     def run(self):
         self.preMain()
+        done = []
         for (count, item) in enumerate(self.itemCoordinates):
+
+            """
             if count % 4 == 0 and count != 0:
                 imageRow = int(count / 4)
                 if imageRow % 3 == 2:
@@ -208,13 +219,33 @@ class Worker(QThread):
                         Macro.scroll(-10)
                     else:
                         Macro.scroll()
+            """
+            if count % 8 == 0 and count != 0:
+                for i in done:
+                    os.system(rf"platform-tools\adb.exe shell rm sdcard/taobao/{MW.Ex.filename}/{i:04}.jpg")
+                os.system(r"platform-tools\adb.exe devices")
+                os.system(r"platform-tools\adb.exe shell am force-stop com.taobao.taobao")
+                time.sleep(2)
+                done = []
+                self.launchTaobaoApp()
+                time.sleep(1)
+                Macro.click(Macro.btn_camera)
+                time.sleep(3)
+                Macro.click(Macro.btn_gallery)
+                time.sleep(3)
+
+            done.append(item[2])
             Macro.click(item)
             time.sleep(MW.loadDelay)
             self.fetchData(item[2], len(MW.images) - count + 1)
-            Macro.singleClick(Macro.btn_escape)
-            time.sleep(0.5)
+            while True:
+                Macro.singleClick(Macro.btn_escape)
+                time.sleep(0.5)
+                if pyautogui.locateOnScreen("taobaoCamera.png", confidence=0.9):
+                    break
             Macro.click(Macro.btn_gallery)
             time.sleep(0.5)
+            time.sleep(MW.fetchDelay)
         self.endTime = datetime.datetime.now()
         self.totalTime = self.endTime - self.startTime
         MW.output(f"Fetch Done; total={MW.count}; {self.totalTime.total_seconds() // 3600}h {self.totalTime.total_seconds() // 60}m")
@@ -225,31 +256,44 @@ class Worker(QThread):
         self.wait(3000)
         del self.debugger, self
 
-    def fetchData(self, index, writeRow):
-        images = []
+    @staticmethod
+    def fetchData(index, writeRow):
         links = []
-        error = pyautogui.locateOnScreen("taobaoError.png")  # TODO: add-binary
+        error = pyautogui.locateOnScreen("taobaoError.png", confidence=0.9)  # TODO: add-binary
         if error:
+            MW.output("Error Popup Detected")
+            Macro.click((360, 500))
+            time.sleep(5)
+        error1 = pyautogui.locateOnScreen("taobaoError_.png", confidence=0.9)
+        if error1:
             MW.output("Error Popup Detected")
             Macro.click((360, 500))
             time.sleep(5)
         for result in (Macro.result_1, Macro.result_2):
             c = 221 if result[2] == 2 else 0
-            pyautogui.screenshot(f"__temp{c}.png", region=(2+c, 228, 110, 110))
-            images.append(f"__temp{c}.png")
+            pyautogui.screenshot(f"__temp{c}.png", region=(1+c, 228, 216, 216))
             Macro.click(result)
             time.sleep(2)
             Macro.click(Macro.btn_share)
             time.sleep(2)
             Macro.click(Macro.btn_copy)
             time.sleep(2)
-            Macro.click(Macro.btn_escape)
-            time.sleep(2)
-            Macro.singleClick(Macro.btn_escape)
-            time.sleep(2)
+            while True:
+                Macro.singleClick(Macro.btn_escape)
+                time.sleep(2)
+                if pyautogui.locateOnScreen("taobaoItemDetail.png", confidence=0.9):
+                    break
+            while True:
+                Macro.singleClick(Macro.btn_escape)
+                time.sleep(2)
+                if pyautogui.locateOnScreen("taobaoItemList.png", confidence=0.9):
+                    break
             l = pyperclip.paste()
-            links.append(l[4:l.index('「') - 8])
-        self.Ex.write(writeRow, links, images, index)
+            try:
+                links.append(l[4:l.index('「') - 8])
+            except ValueError:
+                links.append(l)
+        MW.Ex.write(writeRow, links, index)
         os.remove("__temp0.png")
         os.remove("__temp221.png")
         MW.progressBar.setValue(MW.count)
@@ -267,9 +311,10 @@ class Worker(QThread):
         time.sleep(5)
         Macro.click(Macro.btn_gallery)
         time.sleep(5)
-        for (count, index) in enumerate(reversed(MW.images)):
+        for (count, index) in enumerate(reversed(sorted(MW.images))):
             x = (count % 4) * 106
-            self.itemCoordinates.append((Macro.item_1[0]+x, Macro.item_1[1], index))
+            y = 106 if (count // 4) % 2 == 1 else 0
+            self.itemCoordinates.append((Macro.item_1[0] + x, Macro.item_1[1] + y, index))
         MW.output(f"Start Fetch")
         self.startTime = datetime.datetime.now()
 
