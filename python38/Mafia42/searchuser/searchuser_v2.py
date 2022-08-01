@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import requests, json, sys, datetime, sqlite3, os
+import requests, json, sys, datetime, sqlite3, os, time
 import pandas as pd
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from PyQt5 import uic
 
 from main import Ui_MainWindow
 from sub import Ui_SubWindow
@@ -45,9 +44,13 @@ class Sql:
             return
     """
     def __init__(self) -> None:
+        self.database_validity = True
         for file in os.listdir("source\\"):
-            if ".db" in file:
+            if "userdata" and ".db" in file:
                 db = file
+            else:
+                self.database_validity = False
+                return
         self.conn = sqlite3.connect("source\\" + db)
         self.database = db
         db_name = "userdata"
@@ -65,6 +68,7 @@ class Sql:
                 return {"id": user_id, "nickname": nickname}
             except IndexError:
                 return 0            
+
 
 # noinspection PyArgumentList
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -111,6 +115,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         f.close()
         """
         self.Sql = Sql()
+        if not self.Sql.database_validity:
+            self.warning_error10()
+            time.sleep(10)
+            sys.exit()
         self.output(f"Connected to Database; Database: {self.Sql.database}")
         
         self.output(f"Mafia42 User Search Client v{version}")
@@ -238,6 +246,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def warning_error09(self):
         QMessageBox.warning(self, "[E09] TypeError", "MainWindow.check() missing 1 required argument: int id")
 
+    def warning_error10(self):
+        QMessageBox.warning(self, "[E10] Database Error", "No database file in directory!")
+        
     def warning_warn01(self, arg1, arg2):
         QMessageBox.warning((self, "[W01] Database Alert", "Database and Server doesn't match(%s, %s)" % arg1, arg2))
 
