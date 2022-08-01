@@ -1,4 +1,7 @@
-import os, sys, time, datetime, openpyxl, pyautogui, pyperclip, shutil, threading
+# -*- coding: utf-8 -*-
+# tis4/run.py
+
+import os, sys, time, datetime, openpyxl, pyautogui, pyperclip, shutil, threading, requests
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QThread
 from PyQt5.QtGui import QIntValidator, QTextCursor
@@ -79,6 +82,10 @@ class Excel:
         self.ws[f'L{row}'].value = links[1]
         self.ws[f'K{row}'].style = "Hyperlink"
         self.ws[f'L{row}'].style = "Hyperlink"
+        """
+        self.ws[f'M{row}'].value = prices[0]
+        self.ws[f'N{row}'].value = prices[1]
+        """
         self.doc.save(self.tmp)
         MW.count += 1
 
@@ -120,6 +127,7 @@ class MainWindow(QMainWindow, Ui_Window):
         self.setupUi(self)
         self.onlyInt = QIntValidator()
         self.files_dir = ''
+        self._files_dir = ''
         self.excelFilepath = ''
         self.btn_file.clicked.connect(self.select_dir)
         self.skipPush.stateChanged.connect(self.fixState)
@@ -175,26 +183,14 @@ class MainWindow(QMainWindow, Ui_Window):
         ) + '/'
         self.lb_filedir.setText(self.files_dir)
         self.lb_filedir.repaint()
+        self.files_dir_ = self.files_dir
         if self.multiFiles.isChecked():
             self.btn_start.setEnabled(True)
 
     def multiStart(self):
-        multiFiles = os.listdir(self.files_dir)
-        self.output(f"MultiFetch Start; fileCount={len(multiFiles)}")
-        for (cnt, file) in enumerate(multiFiles, start=1):
-            self.files_dir = self.files_dir + file + '\\'
-            self.index()
-            self.start()
-            while True:
-                time.sleep(10)
-                try:
-                    if self.worker:
-                        pass
-                except NameError:
-                    self.output(f"File {cnt}/{len(multiFiles)} Done")
-                    break
-            time.sleep(5)
-            self.count = 0
+        self.workerFinished = False
+        self.multiWorker = MultiWorker()
+        self.multiWorker.start()
 
     def indexValidator(self):
         iMax = int(self.le_indexmax.text())
@@ -238,7 +234,7 @@ class MainWindow(QMainWindow, Ui_Window):
                     self.output("ERROR: Invalid Literal!")
                     return
         elif self.skipRename.isChecked():
-            os.system(rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
+            os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
             for file in files:
                 if ".xlsx" in file:
                     if "~$" not in file[0:3]:
@@ -254,10 +250,10 @@ class MainWindow(QMainWindow, Ui_Window):
                     self.output("ERROR: Invalid Literal!")
                     return
             for index in self.realImages:
-                os.system(rf"platform-tools\adb.exe push {self.files_dir}" +
+                os.system(Rf"platform-tools\adb.exe push {self.files_dir}" +
                           f"{int(index):04}.jpg sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
         else:
-            os.system(rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
+            os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
             for file in files:
                 if ".xlsx" not in file:
                     index = file[file.rindex("_")+1:file.rindex(".jpg")]
@@ -276,8 +272,9 @@ class MainWindow(QMainWindow, Ui_Window):
                     self.output("ERROR: Invalid Literal!")
                     return
             for index in self.realImages:
-                os.system(rf"platform-tools\adb.exe push {self.files_dir}" +
+                os.system(Rf"platform-tools\adb.exe push {self.files_dir}" +
                           f"{int(index):04}.jpg sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
+        self.progressBar.setValue(0)
         self.progressBar.setRange(0, len(self.realImages))
         self.btn_start.setEnabled(True)
         self.output(f"Index Done; found {len(self.realImages)} items")
@@ -322,12 +319,12 @@ class Worker(QThread):
                 log.info(f"Restarting Debugger; count={count}, skipConstant={skipConstant}")
                 if done:
                     for i in done:
-                        os.system(rf"platform-tools\adb.exe shell rm sdcard/taobao/{MW.Ex.filename}/{i:04}.jpg")
+                        os.system(Rf"platform-tools\adb.exe shell rm sdcard/taobao/{MW.Ex.filename}/{i:04}.jpg")
                     MW.output(f"Deleted Images: ~{done[len(done) - 1]:04}.jpg")
                 else:
                     MW.output("Deleted Nothing")
-                os.system(r"platform-tools\adb.exe devices")
-                os.system(r"platform-tools\adb.exe shell am force-stop com.taobao.taobao")
+                os.system(R"platform-tools\adb.exe devices")
+                os.system(R"platform-tools\adb.exe shell am force-stop com.taobao.taobao")
                 MW.output("Restarted Debugger")
                 time.sleep(2)
                 done = []
@@ -347,9 +344,9 @@ class Worker(QThread):
             if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemList.png", region=(0, 30, 460, 400), confidence=0.9):
                 MW.output("Sleeping Extra Time")
                 time.sleep(20 - MW.loadDelay)
-            if not self.fetchData(index, len(MW.realImages) - count + 2):
+            if not self.fetchData(index, len(MW.realImages) - count + 1):
                 skipConstant = 7 - (count % 8)
-                self.skips.append((index, len(MW.realImages) - count + 2))
+                self.skips.append((index, len(MW.realImages) - count + 1))
                 if self.consecutiveSkips == 3:
                     self.sendReport("error", doneCount=count)
                     return
@@ -382,18 +379,21 @@ class Worker(QThread):
         self.totalTime = self.endTime - self.startTime
         MW.output(f"Fetch Done; total={MW.count}; {self.totalTime.total_seconds() // 3600}h {self.totalTime.total_seconds() // 60}m")
         for i in done:
-            os.system(rf"platform-tools\adb.exe shell rm sdcard/taobao/{MW.Ex.filename}/{i:04}.jpg")
+            os.system(Rf"platform-tools\adb.exe shell rm sdcard/taobao/{MW.Ex.filename}/{i:04}.jpg")
         MW.output(f"Deleted Images: ~{done[len(done) - 1]:04}.jpg")
         MW.Ex.finalSave()
         self.sendReport("success", doneCount=self.lastDone)
+        MW.output("Killing ADB")
+        os.system(R"platform-tools\adb.exe kill-server")
         MW.output("Deleting SubThread")
+        del self.debugger
+        MW.workerFinished = True
         self.deleteLater()
         self.quit()
-        del self
 
-    @staticmethod
-    def fetchData(index, writeRow) -> 0 or 1:
+    def fetchData(self, index, writeRow) -> 0 or 1:
         links = []
+        urls = []
         Macro.beforeLocate()
         error = pyautogui.locateOnScreen(BASE_DIR + "taobaoError.png", region=(20, 400, 410, 140), confidence=0.9)  # TODO: add-binary
         if error:
@@ -452,8 +452,8 @@ class Worker(QThread):
                 ts = datetime.datetime.now().timestamp()
                 if not os.path.isdir(os.getcwd() + "\\screenshots\\"):
                     os.makedirs(os.getcwd() + "\\screenshots")
-                pyautogui.screenshot(rf"screenshots\{ts}.png")
-                log.error(rf"Saved Screenshot: {ts}.png")
+                pyautogui.screenshot(Rf"screenshots\{ts}.png")
+                log.error(f"Saved Screenshot: {ts}.png")
                 MW.output(f"Skip item[{index}]; row={writeRow}, count={MW.count}", error=True)
                 return
             Macro.click(copyLinkBtn)
@@ -476,6 +476,13 @@ class Worker(QThread):
                 links.append(l[4:l.index('「') - 8])
             except ValueError:
                 links.append(l)
+        # prices = []
+        """        
+        for link in links:
+            url, price = self.redirect_link(link)
+            urls.append(url)
+            prices.append(price)
+        """
         MW.Ex.write(writeRow, links)
         os.remove("__temp0.png")
         os.remove("__temp221.png")
@@ -486,7 +493,7 @@ class Worker(QThread):
     def preMain(self):
         self.connectDebugger()
         MW.output(f"Attached Debugger to the device")
-        time.sleep(2)
+        time.sleep(5)
         self.launchTaobaoApp()
         MW.output(f"Launched Taobao App")
         Macro().moveWindow()
@@ -503,13 +510,26 @@ class Worker(QThread):
         MW.output(f"Start Fetch")
         self.startTime = datetime.datetime.now()
 
+    """
+    @staticmethod
+    def redirect_link(link) -> tuple:
+        r = requests.get(link)
+        r.encoding = "utf-8"
+        res = r.text
+        res1 = res[res.index("var url = ") + 11:]
+        price = res1[res1.index("&price")+7:res1.index("&source")]
+        return res1[:res1.index("&price")], price
+    """
+
     @staticmethod
     def launchTaobaoApp():  # TODO: add-binary
-        os.system(r"platform-tools\adb.exe shell am start -n com.taobao.taobao/com.taobao.tao.TBMainActivity")
+        os.system(R"platform-tools\adb.exe shell am start -n com.taobao.taobao/com.taobao.tao.TBMainActivity")
 
     @staticmethod
     def sendReport(reportType, doneCount=0):
-        os.system(r"platform-tools\adb.exe shell am start -n com.samsung.android.messaging/com.android.mms.ui.ConversationComposer")
+        os.system(R"platform-tools\adb.exe shell am force-stop com.samsung.android.messaging")
+        time.sleep(3)
+        os.system(R"platform-tools\adb.exe shell am start -n com.samsung.android.messaging/com.android.mms.ui.ConversationComposer")
         ts = datetime.datetime.now()
         time.sleep(3)
         Macro.singleClick((390, 790))
@@ -529,12 +549,35 @@ class Worker(QThread):
         self.debugger.start()
 
 
+class MultiWorker(QThread):
+    def __init__(self):
+        super().__init__()
+        log.info("MultiWorker Thread Initiated")
+
+    def run(self):
+        multiFiles = os.listdir(MW.files_dir_)
+        MW.output(f"MultiFetch Start; fileCount={len(multiFiles)}")
+        for (cnt, file) in enumerate(multiFiles, start=1):
+            MW.files_dir = MW.files_dir_ + file + '\\'
+            MW.index()
+            MW.start()
+            while True:
+                time.sleep(10)
+                if MW.workerFinished:
+                    MW.output(f"File {cnt}/{len(multiFiles)} Done")
+                    break
+            MW.workerFinished = False
+            del MW.worker
+            time.sleep(5)
+            MW.count = 0
+
+
 class Debugger(threading.Thread):
     def __init__(self):
         super().__init__()
 
     def run(self):
-        os.system(r"platform-tools\scrcpy.exe -d")
+        os.system(R"platform-tools\scrcpy.exe -d")
 
 
 if __name__ == "__main__":
