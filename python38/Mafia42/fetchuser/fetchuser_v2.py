@@ -1,32 +1,21 @@
-import requests, ray, time, json, pymysql
+import requests, ray, time, json, sqlite3
+import pandas as pd
 from datetime import datetime, timedelta
 
-# Latest Modified Date : 2022/06/19
+# Latest Modified Date : 2022/08/02
 # Mafia42 userdb fetcher
 
 
-version = "2.2"
+version = "2.3"
 
 end = int(json.loads(requests.post("https://mafia42.com/board/get-lastDiscussion",
                                    json={"articles": {"page": 0}}).text)["articleData"][0]["article_id"]) + 1
 
 f = open("settings.txt", 'r')
 settings = f.readlines()
-username = settings[1][5:].strip()
-password = settings[2][9:].strip()
 last_fetch = int(settings[8][11:].strip())
+print("last_fetch=", last_fetch)
 f.close()
-
-try:
-    check_db = pymysql.connect(
-                user=username,
-                password=password,
-                host="127.0.0.1",
-                db="mafia42",
-                charset="utf8"
-            )
-except pymysql.err.OperationalError:
-    print("Failed Connecting to SQL Server")
 
 f = open("userlist.txt", 'r')
 ul = f.readlines()
@@ -81,7 +70,7 @@ def fetch(article_id):
 
     except OSError:
         print(f"[ERROR][{timestamp()}] OSError: letting server rest")
-        time.sleep(10)
+        time.sleep(30)
         r = requests.get(f"https://mafia42.com/api/show-lastDiscussion/{article_id}")
 
     except requests.exceptions.ConnectionError:
@@ -104,7 +93,7 @@ def fetch_old(user_id):
 
     except OSError:
         print(f"[ERROR][{timestamp()}] OSError: letting server rest")
-        time.sleep(10)
+        time.sleep(30)
         r = requests.post(f"https://mafia42.com/api/user/user-info", data=payload)
 
     except requests.exceptions.ConnectionError:
@@ -181,76 +170,50 @@ def main_old(x, y):
 
 class Sql:
     def __init__(self):
-        self.user_db = pymysql.connect(
-            user=username,
-            password=password,
-            host="127.0.0.1",
-            db="mafia42",
-            charset="utf8"
-        )
-        print(f"[{timestamp()}] Connected to SQL Server")
         self.date = str(datetime.now().date()).replace("-", "")[2:]
-        self.cursor = self.user_db.cursor(pymysql.cursors.DictCursor)
-        self.table_name = ""
-
-    def create_table(self):
-        try:
-            self.cursor.execute(f"""
-                CREATE TABLE `userdata_{self.date}` (
-                nickname TEXT NULL,
-                id INT NULL DEFAULT NULL
-                )
-                COLLATE = 'utf8mb3_general_ci';
-            """)
-            print(f"[{timestamp()}] Created Table")
-            self.table_name = f"userdata_{self.date}"
-
-        except pymysql.err.OperationalError:
-            print(f"[{timestamp()}] Table Already Exists!")
-            self.cursor.execute(f"""
-                CREATE TABLE `{self.table_name}` (
-                nickname TEXT NULL,
-                id INT NULL DEFAULT NULL
-                )
-                COLLATE = 'utf8mb3_general_ci';
-            """)
-            print(f"[{timestamp()}] Created Table")
-            self.table_name = f"userdata_{self.date}_temp"
-
-    def insert(self, data_):
-        statement = f"""
-                        INSERT INTO `{self.table_name}`(nickname, id)
-                        VALUES (%s, %s);
-                        """
-        self.cursor.executemany(statement, data_)
-        self.user_db.commit()
-        self.update()
+        self.conn = sqlite3.connect(f"userlist_{self.date}.db")
+        self.df = pd.DataFrame({"id": "", "nickname": ""}, index=range(0, 1))
+    
+    def insert(self, data):
+        nickname_list = []
+        id_list = []
+        for (nickname, user_id) in data:
+            nickname_list.append(nickname)
+            id_list.append(user_id)
+        data_to_insert = {"id": id_list, "nickname": nickname_list}
+        df_to_insert = pd.DataFrame(data_to_insert, index=range(0, len(data)))
+        self.df = pd.concat([self.df, df_to_insert])
 
     @staticmethod
     def update():
-        count = 0
         file = open("settings.txt", 'w')
-        for line in settings:
-            count += 1
-            if count != 9:
+        for count, line in enumerate(settings):
+            if count != 8:
                 file.write(line)
             else:
                 file.write(f"last_fetch={end}")
         file.close()
 
-
+    def save(self):
+        d = self.df
+        try:
+            df = d if not d.drop_duplicates() else d.drop_duplicates()
+        except ValueError:
+            df = d
+        df.to_sql("userdata", self.conn)
+        
+sql = Sql()
 cnt = 1
 print(f"[{timestamp()}] Fetch Initiated")
 for (s, e) in split1:
     if __name__ == "__main__":
         main_old(s, e)
-sql = Sql()
-sql.create_table()
 sql.insert(old_users)
 
 for (s, e) in split2:
     if __name__ == "__main__":
         main(s, e)
 sql.insert(new_users)
-
+sql.save()
+sql.update()
 print(f"[{timestamp()}] fetchuser_v2 Complete!")
