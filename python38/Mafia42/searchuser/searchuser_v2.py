@@ -1,25 +1,33 @@
-import pymysql, requests, json, sys, datetime
+# -*- coding: utf-8 -*-
+
+import requests, json, sys, datetime, sqlite3, os
+import pandas as pd
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 
-form_class = uic.loadUiType("main.ui")[0]
-form_class2 = uic.loadUiType("sub.ui")[0]
+from main import Ui_MainWindow
+from sub import Ui_SubWindow
 
-version = '2.3'
+version = '2.4'
 
 # Patch Notes
 ###########################################################################
+# 2.3
 # Added Exception for wrong SQL Password
-# Added SQL Update warning when usernames not accord with each other
+# Added DB Update warning when usernames not accord with each other
 # Simplified Source Code
+# 2.4 (2022/08/01)
+# uses sqlite to run without sql installed
+# integrated ui files to the code
+# Put db files to the following path: {os.getcwd()}\source\
 ###########################################################################
-# Last Updated : 2022/07/049 22:33 +09
+# Last Updated : 2022/08/01 23:57 +09
 
 
 class Sql:
-
+    """
     def __init__(self):
         self.cursor = Win.user_db.cursor(pymysql.cursors.DictCursor)
 
@@ -35,10 +43,31 @@ class Sql:
         except IndexError:
             validity = False
             return
-
+    """
+    def __init__(self) -> None:
+        for file in os.listdir("source\\"):
+            if ".db" in file:
+                db = file
+        self.conn = sqlite3.connect("source\\" + db)
+        self.database = db
+        db_name = "userdata"
+        d = pd.read_sql(f"SELECT * FROM {db_name}", self.conn)
+        self.data = d.set_index("index")
+        
+    def search_id(self, nickname: str) -> int:  # TODO: Return results even when the cases don't match (Use .upper or .lower)
+        df = self.data
+        try:
+            user_id = df[df.nickname == nickname].iloc[0].id
+            return {"id": user_id, "nickname": nickname}
+        except IndexError:
+            try:
+                user_id = df[df.nickname == nickname].iloc[0].id
+                return {"id": user_id, "nickname": nickname}
+            except IndexError:
+                return 0            
 
 # noinspection PyArgumentList
-class MainWindow(QMainWindow, form_class):
+class MainWindow(QMainWindow, Ui_MainWindow):
     global validity
 
     def __init__(self):
@@ -60,6 +89,7 @@ class MainWindow(QMainWindow, form_class):
 
         self.datatype_dict = {0: None, 1: "ID", 2: "nickname", 3: "Refresh"}
 
+        """
         f = open("settings.txt")
         settings = f.readlines()
         user = settings[1][5:].strip()
@@ -79,7 +109,10 @@ class MainWindow(QMainWindow, form_class):
             self.warning_error07()
             exit()
         f.close()
-
+        """
+        self.Sql = Sql()
+        self.output(f"Connected to Database; Database: {self.Sql.database}")
+        
         self.output(f"Mafia42 User Search Client v{version}")
         self.idinput.textChanged.connect(self.fetch_id)
         self.nickinput.textChanged.connect(self.fetch_nickname)
@@ -108,7 +141,7 @@ class MainWindow(QMainWindow, form_class):
 
             else:
                 try:
-                    sql_data = Sql.search_id(Sql(), input_data)
+                    sql_data = self.Sql.search_id(input_data)
                     input_data, db_nickname = sql_data['id'], sql_data['nickname']
 
                 except TypeError:
@@ -206,7 +239,7 @@ class MainWindow(QMainWindow, form_class):
         QMessageBox.warning(self, "[E09] TypeError", "MainWindow.check() missing 1 required argument: int id")
 
     def warning_warn01(self, arg1, arg2):
-        QMessageBox.warning((self, "[W01] Database Warning", "Database and Server doesn't match(%s, %s)" % arg1, arg2))
+        QMessageBox.warning((self, "[W01] Database Alert", "Database and Server doesn't match(%s, %s)" % arg1, arg2))
 
     def output(self, msg):
         self.console.append(msg)
@@ -214,7 +247,7 @@ class MainWindow(QMainWindow, form_class):
     def output_clear(self):
         self.console.clear()
 
-    def keyPressEvent(self, k):  # Pressing <Return> triggers analyze()
+    def keyPressEvent(self, k):
         if k.key() == Qt.Key_Return:
             self.analyze(0)
 
@@ -310,8 +343,7 @@ class MainWindow(QMainWindow, form_class):
             self.data['fame'] = str(self.data['fame']) + f" (권위의 엽서: {int((-1)*self.data['fame']*0.015 - 20)})"
 
 
-class SubWindow(QMainWindow, form_class2):
-
+class SubWindow(QMainWindow, Ui_SubWindow):
     def __init__(self):  # noinspection PyArgumentList
         super().__init__()
         self.setupUi(self)
