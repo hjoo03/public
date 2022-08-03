@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # tis4/run.py
 
-import os, sys, time, datetime, openpyxl, pyautogui, pyperclip, shutil, threading, requests
+import os, sys, time, datetime, openpyxl, pyautogui, pyperclip, shutil, threading
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QThread
 from PyQt5.QtGui import QIntValidator, QTextCursor
@@ -10,8 +10,8 @@ from openpyxl.drawing.image import Image
 from logger import Logger
 from form import Ui_Window
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + '\\'
-
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + '\\'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + "\\images\\"
 
 # TODO: add-binary mih.ico
 class Macro:
@@ -140,6 +140,7 @@ class MainWindow(QMainWindow, Ui_Window):
         self.fetchDelay: int = 0  # TODO: indexRange
         self.indexRange: tuple = (0, 0)
         self.openCV_offset: int = 0
+        self.openCV_confidence: float = 0.9
         
         self.count = 0
 
@@ -177,7 +178,8 @@ class MainWindow(QMainWindow, Ui_Window):
         self.fetchDelay = int(self.le_fetchdelay.text())
         self.errorReportNumber = str(self.le_erhp.text())
         self.openCV_offset = int(self.le_ocv_offset.text())
-        self.worker = Worker(self.openCV_offset)
+        self.openCV_confidence = float(self.le_ocv_confidence.text())
+        self.worker = Worker(self.openCV_offset, self.openCV_confidence)
         self.worker.start()
 
     def select_dir(self):
@@ -305,7 +307,7 @@ class MainWindow(QMainWindow, Ui_Window):
 
 
 class Worker(QThread):
-    def __init__(self, offset):
+    def __init__(self, offset, confidence):
         super().__init__()
         log.info("Worker Thread Initiated")
         self.itemCoordinates = []
@@ -314,6 +316,7 @@ class Worker(QThread):
         self.consecutiveSkips = 0
         self.skips = []
         self.offset = offset if offset <= 20 else 20
+        self.confidence = confidence
 
     def run(self):
         self.preMain()
@@ -338,7 +341,7 @@ class Worker(QThread):
                 Macro.singleClick(Macro.btn_camera)
                 time.sleep(3)
                 oldGallery = pyautogui.locateOnScreen(BASE_DIR + "taobaoOldGallery.png", region=(140 - self.offset, 700 - self.offset, 160 + self.offset, 110 + self.offset),
-                                                      confidence=0.9)
+                                                      confidence=self.confidence)
                 Macro.singleClick(Macro.btn_gallery if oldGallery else Macro.btn_gallery_lower)
                 time.sleep(3)
 
@@ -346,7 +349,7 @@ class Worker(QThread):
             Macro.click(self.itemCoordinates[(count + skipConstant) % 8])
             time.sleep(MW.loadDelay)
             Macro.beforeLocate()
-            if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemList.png", region=(0, 30 - self.offset, 460 + self.offset, 400 + self.offset), confidence=0.9):
+            if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemList.png", region=(0, 30 - self.offset, 460 + self.offset, 400 + self.offset), confidence=self.confidence):
                 MW.output("Sleeping Extra Time")
                 time.sleep(20 - MW.loadDelay)
             if not self.fetchData(index, len(MW.realImages) - count + 1):
@@ -360,22 +363,20 @@ class Worker(QThread):
                 self.consecutiveSkips = 0
             tries = 0
             while True:
-                if tries > 5:
-                    self.quit()
-                    self.wait(2000)
+                if tries > 6:
                     return
                 Macro.singleClick(Macro.btn_escape)
                 time.sleep(3)
                 Macro.beforeLocate()
-                if pyautogui.locateOnScreen(BASE_DIR + "taobaoCamera.png", confidence=0.9, region=(300 - self.offset, 60 - self.offset, 150 + self.offset, 100 + self.offset)):
+                if pyautogui.locateOnScreen(BASE_DIR + "taobaoCamera.png", confidence=self.confidence, region=(300 - self.offset, 60 - self.offset, 150 + self.offset, 100 + self.offset)):
                     break
-                if pyautogui.locateOnScreen(BASE_DIR + "taobaoMain.png", confidence=0.9, region=(270 - self.offset, 850 - self.offset, 170 + self.offset, 80 + self.offset)):
+                if pyautogui.locateOnScreen(BASE_DIR + "taobaoMain.png", confidence=self.confidence, region=(270 - self.offset, 850 - self.offset, 170 + self.offset, 80 + self.offset)):
                     MW.output("Returned from Main")
                     Macro.click(Macro.btn_camera)
                     time.sleep(2)
                     break
                 tries += 1
-            oldGallery = pyautogui.locateOnScreen(BASE_DIR + "taobaoOldGallery.png", region=(140 - self.offset, 700 - self.offset, 160 + self.offset, 110 + self.offset), confidence=0.9)
+            oldGallery = pyautogui.locateOnScreen(BASE_DIR + "taobaoOldGallery.png", region=(140 - self.offset, 700 - self.offset, 160 + self.offset, 110 + self.offset), confidence=self.confidence)
             Macro.singleClick(Macro.btn_gallery if oldGallery else Macro.btn_gallery_lower)
             time.sleep(MW.fetchDelay)
             self.lastDone = count
@@ -403,33 +404,33 @@ class Worker(QThread):
         links = []
         urls = []
         Macro.beforeLocate()
-        error = pyautogui.locateOnScreen(BASE_DIR + "taobaoError.png", region=(20 - self.offset, 400 - self.offset, 410 + self.offset, 140 + self.offset), confidence=0.9)  # TODO: add-binary
+        error = pyautogui.locateOnScreen(BASE_DIR + "taobaoError.png", region=(20 - self.offset, 400 - self.offset, 410 + self.offset, 140 + self.offset), confidence=self.confidence)  # TODO: add-binary
         if error:
             MW.output("Error Popup Detected", error=True)
             Macro.click((360, 500))
             time.sleep(15)
-            if pyautogui.locateOnScreen(BASE_DIR + "taobaoErrorLoading.png", region=(60 - self.offset, 300 - self.offset, 300 + self.offset, 450 + self.offset), confidence=0.8):
+            if pyautogui.locateOnScreen(BASE_DIR + "taobaoErrorLoading.png", region=(60 - self.offset, 300 - self.offset, 300 + self.offset, 450 + self.offset), confidence=self.confidence-0.05):
                 MW.output("errorLoading Detected", error=True)
                 time.sleep(30)
         Macro.beforeLocate()
-        error1 = pyautogui.locateOnScreen(BASE_DIR + "taobaoError_.png", region=(20 - self.offset, 400 - self.offset, 410 + self.offset, 140 + self.offset), confidence=0.9)
+        error1 = pyautogui.locateOnScreen(BASE_DIR + "taobaoError_.png", region=(20 - self.offset, 400 - self.offset, 410 + self.offset, 140 + self.offset), confidence=self.confidence)
         if error1:
             MW.output("Error Popup Detected", error=True)
             Macro.click((360, 500))
             time.sleep(15)
-            if pyautogui.locateOnScreen(BASE_DIR + "taobaoErrorLoading.png", region=(60 - self.offset, 300 - self.offset, 300 + self.offset, 450 + self.offset), confidence=0.8):
+            if pyautogui.locateOnScreen(BASE_DIR + "taobaoErrorLoading.png", region=(60 - self.offset, 300 - self.offset, 300 + self.offset, 450 + self.offset), confidence=self.confidence-0.05):
                 MW.output("errorLoading Detected", error=True)
                 time.sleep(30)
         offset = 0
         Macro.beforeLocate()
-        if not pyautogui.locateOnScreen(BASE_DIR + "taobaoCharacterResult.png", region=(0, 240 - self.offset, 100 + self.offset, 60 + self.offset), confidence=0.95):
-            if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter1.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=0.95):
-                if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter2.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=0.95):
-                    if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter3.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=0.95):
-                        if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter4.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=0.95):
-                            if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter5.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=0.95):
-                                if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter6.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=0.95):
-                                    if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemList.png", region=(0, 30 - self.offset, 460 + self.offset, 200 + self.offset), confidence=0.9):
+        if not pyautogui.locateOnScreen(BASE_DIR + "taobaoCharacterResult.png", region=(0, 240 - self.offset, 100 + self.offset, 60 + self.offset), confidence=self.confidence):
+            if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter1.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=self.confidence-0.05):
+                if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter2.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=self.confidence-0.05):
+                    if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter3.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=self.confidence-0.05):
+                        if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter4.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=self.confidence-0.05):
+                            if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter5.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=self.confidence-0.05):
+                                if not pyautogui.locateOnScreen(BASE_DIR + "taobaoFilter6.png", region=(0, 170 - self.offset, 330 + self.offset, 60 + self.offset), confidence=self.confidence-0.05):
+                                    if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemList.png", region=(0, 30 - self.offset, 460 + self.offset, 200 + self.offset), confidence=self.confidence):
                                         MW.output("Offset Level = 2")
                                         offset = 100
                                     else:
@@ -448,13 +449,13 @@ class Worker(QThread):
             else:
                 Macro.click(result)
             time.sleep(2.5)
-            if pyautogui.locateOnScreen(BASE_DIR + "taobaoVerify.png", region=(30 - self.offset, 200 - self.offset, 400 + self.offset, 600 + self.offset), confidence=0.9):
+            if pyautogui.locateOnScreen(BASE_DIR + "taobaoVerify.png", region=(30 - self.offset, 200 - self.offset, 400 + self.offset, 600 + self.offset), confidence=self.confidence):
                 Macro.singleClick(Macro.btn_escape)
                 time.sleep(2)
             Macro.click(Macro.btn_share)
             time.sleep(2)
             try:
-                copyLinkBtn = pyautogui.center(pyautogui.locateOnScreen(BASE_DIR + "taobaoCopyLink.png", confidence=0.9))
+                copyLinkBtn = pyautogui.center(pyautogui.locateOnScreen(BASE_DIR + "taobaoCopyLink.png", confidence=self.confidence))
             except TypeError:
                 MW.count += 1
                 ts = datetime.datetime.now().timestamp()
@@ -473,8 +474,8 @@ class Worker(QThread):
             while True:
                 if tries > 6:
                     return
-                if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemDetail.png", region=(0, 830 - self.offset, 180 + self.offset, 80 + self.offset), confidence=0.95):
-                    if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemDetail2.png", region=(0, 845 - self.offset, 165 + self.offset, 60 + self.offset), confidence=0.95):
+                if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemDetail.png", region=(0, 830 - self.offset, 180 + self.offset, 80 + self.offset), confidence=self.confidence):
+                    if not pyautogui.locateOnScreen(BASE_DIR + "taobaoItemDetail2.png", region=(0, 845 - self.offset, 165 + self.offset, 60 + self.offset), confidence=self.confidence):
                         break
                 Macro.singleClick(Macro.btn_escapeItemDetail)
                 time.sleep(3)
@@ -508,7 +509,7 @@ class Worker(QThread):
         time.sleep(3)
         Macro.click(Macro.btn_camera)
         time.sleep(3)
-        oldGallery = pyautogui.locateOnScreen(BASE_DIR + "taobaoOldGallery.png", region=(140 - self.offset, 700 - self.offset, 160 + self.offset, 110 + self.offset), confidence=0.9)
+        oldGallery = pyautogui.locateOnScreen(BASE_DIR + "taobaoOldGallery.png", region=(140 - self.offset, 700 - self.offset, 160 + self.offset, 110 + self.offset), confidence=self.confidence)
         Macro.singleClick(Macro.btn_gallery if oldGallery else Macro.btn_gallery_lower)
         time.sleep(3)
         for i in range(0, 8):
