@@ -183,6 +183,6 @@ class Ui_Window(object):
         self.multiFiles.setText(_translate("Window", "Multiple Files"))
         self.le_ocv_offset.setText(_translate("Window", "5"))
         self.label_7.setText(_translate("Window", "offset"))
-        self.le_ocv_confidence.setText(_translate("Window", "5"))
+        self.le_ocv_confidence.setText(_translate("Window", "0.9"))
         self.label_8.setText(_translate("Window", "confidence"))
         self.label_9.setText(_translate("Window", "OpenCV Options"))

@@ -9,11 +9,17 @@ from openpyxl.drawing.image import Image
 
 from logger import Logger
 from form import Ui_Window
+import manipulate_exif
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + '\\'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + "\\images\\"
 
 # TODO: add-binary mih.ico
+
+class Error(OSError):
+    pass
+
+
 class Macro:
     main_window = (950, 60)
     btn_camera = (342, 135)
@@ -183,11 +189,14 @@ class MainWindow(QMainWindow, Ui_Window):
         self.worker.start()
 
     def select_dir(self):
-        self.files_dir = QFileDialog.getExistingDirectory(
+        self.original_files_dir = QFileDialog.getExistingDirectory(
             parent=self,
             caption="Select a folder"
         ) + '/'
-        self.lb_filedir.setText(self.files_dir)
+        self.files_dir = os.getcwd() + "/temp/data/"
+        shutil.copytree_noattr(src=self.original_files_dir, dst=self.files_dir)
+        self.output("Copied FileTree to /temp/data/")
+        self.lb_filedir.setText(self.original_files_dir)
         self.lb_filedir.repaint()
         self.files_dir_ = self.files_dir
         if self.multiFiles.isChecked():
@@ -221,74 +230,91 @@ class MainWindow(QMainWindow, Ui_Window):
             self.skipPush.setChecked(False)
 
     def index(self):
-        self.Ex = Excel()
-        files = os.listdir(self.files_dir)
-        self.realImages = []
-        if self.skipPush.isChecked() and self.skipRename.isChecked():
-            for file in files:
-                if ".xlsx" in file:
-                    if "~$" not in file[0:3]:
-                        self.excelFilepath = self.files_dir + file
-            self.Ex.create_template()
-            self.Ex.setup_sheet()
-            for cellObj in reversed(list(MW.Ex.ws.columns)[0]):
-                try:
-                    index = cellObj.value
-                    if (index and index != "Index") or index == 0:
-                        self.realImages.append(int(index))
-                except ValueError:
-                    self.output("ERROR: Invalid Literal!")
-                    return
-        elif self.skipRename.isChecked():
-            os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
-            for file in files:
-                if ".xlsx" in file:
-                    if "~$" not in file[0:3]:
-                        self.excelFilepath = self.files_dir + file
-            self.Ex.create_template()
-            self.Ex.setup_sheet()
-            for cellObj in reversed(list(MW.Ex.ws.columns)[0]):
-                try:
-                    index = cellObj.value
-                    if (index and index != "Index") or index == 0:
-                        self.realImages.append(int(index))
-                except ValueError:
-                    self.output("ERROR: Invalid Literal!")
-                    return
-            for index in self.realImages:
-                os.system(Rf"platform-tools\adb.exe push {self.files_dir}" +
-                          f"{int(index):04}.jpg sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
-        else:
-            os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
-            for file in files:
-                if ".xlsx" not in file:
-                    index = file[file.rindex("_")+1:file.rindex(".jpg")]
-                    os.rename(self.files_dir + file, self.files_dir + f"{int(index):04}.jpg")
-                else:
-                    if "~$" not in file[0:3]:
-                        self.excelFilepath = self.files_dir + file
-            self.Ex.create_template()
-            self.Ex.setup_sheet()
-            for cellObj in reversed(list(MW.Ex.ws.columns)[0]):
-                try:
-                    index = cellObj.value
-                    if (index and index != "Index") or index == 0:
-                        self.realImages.append(int(index))
-                except ValueError:
-                    self.output("ERROR: Invalid Literal!")
-                    return
-            for index in self.realImages:
-                os.system(Rf"platform-tools\adb.exe push {self.files_dir}" +
-                          f"{int(index):04}.jpg sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
-        self.progressBar.setValue(0)
-        self.progressBar.setRange(0, len(self.realImages))
-        self.btn_start.setEnabled(True)
-        self.output(f"Index Done; found {len(self.realImages)} items")
-        if self.skipPush.isChecked():
-            self.output(f"Skipped Push")
-        else:
-            self.output(f"Pushed {len(self.realImages)} items")
-        self.btn_index.setEnabled(False)
+        errors = []
+        try:
+            self.Ex = Excel()
+            files = os.listdir(self.files_dir)
+            self.realImages = []
+            if self.skipPush.isChecked() and self.skipRename.isChecked():
+                for file in files:
+                    if ".xlsx" in file:
+                        if "~$" not in file[0:3]:
+                            self.excelFilepath = self.files_dir + file
+                self.Ex.create_template()
+                self.Ex.setup_sheet()
+                for cellObj in reversed(list(MW.Ex.ws.columns)[0]):
+                    try:
+                        index = cellObj.value
+                        if (index and index != "Index") or index == 0:
+                            self.realImages.append(int(index))
+                    except ValueError:
+                        self.output("ERROR: Invalid Literal!")
+                        return
+            elif self.skipRename.isChecked():
+                os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
+                for file in files:
+                    if ".xlsx" in file:
+                        if "~$" not in file[0:3]:
+                            self.excelFilepath = self.files_dir + file
+                self.Ex.create_template()
+                self.Ex.setup_sheet()
+                for cellObj in reversed(list(MW.Ex.ws.columns)[0]):
+                    try:
+                        index = cellObj.value
+                        if (index and index != "Index") or index == 0:
+                            self.realImages.append(int(index))
+                    except ValueError:
+                        self.output("ERROR: Invalid Literal!")
+                        return
+                for index in self.realImages:
+                    src_filename = self.files_dir + f"{int(index):04}.jpg"
+                    dst_filename = self.files_dir + f"_{int(index):04}.jpg"
+                    manipulate_exif.set_time(index, src_filename, dst_filename)
+                    os.remove(src_filename)
+                    os.system(R"platform-tools\adb.exe push " + dst_filename +
+                                f" sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
+            else:
+                os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.Ex.filename}/")
+                for file in files:
+                    if ".xlsx" not in file:
+                        index = file[file.rindex("_")+1:file.rindex(".jpg")]
+                        os.rename(self.files_dir + file, self.files_dir + f"{int(index):04}.jpg")
+                    else:
+                        if "~$" not in file[0:3]:
+                            self.excelFilepath = self.files_dir + file
+                self.Ex.create_template()
+                self.Ex.setup_sheet()
+                for cellObj in reversed(list(MW.Ex.ws.columns)[0]):
+                    try:
+                        index = cellObj.value
+                        if (index and index != "Index") or index == 0:
+                            self.realImages.append(int(index))
+                    except ValueError:
+                        self.output("ERROR: Invalid Literal!")
+                        return
+                for index in self.realImages:
+                    src_filename = self.files_dir + f"{int(index):04}.jpg"
+                    dst_filename = self.files_dir + f"_{int(index):04}.jpg"
+                    manipulate_exif.set_time(index, src_filename, dst_filename)
+                    os.remove(src_filename)
+                    os.system(R"platform-tools\adb.exe push " + dst_filename +
+                                f" sdcard/taobao/{self.Ex.filename}/{int(index):04}.jpg")
+            self.progressBar.setValue(0)
+            self.progressBar.setRange(0, len(self.realImages))
+            self.btn_start.setEnabled(True)
+            self.output(f"Index Done; found {len(self.realImages)} items")
+            if self.skipPush.isChecked():
+                self.output(f"Skipped Push")
+            else:
+                self.output(f"Pushed {len(self.realImages)} items")
+            self.btn_index.setEnabled(False)
+        except Error as err:
+            errors.extend(err.args[0])
+        except OSError as why:
+            errors.append(str(why))
+        if errors:
+            shutil.rmtree("temp/")
+            raise Error(errors)
 
     def output(self, msg, error=False):
         if error:
@@ -390,8 +416,9 @@ class Worker(QThread):
         MW.Ex.finalSave()
         if not MW.multi_files_report:
             self.sendReport("success", doneCount=self.lastDone)
-        elif MW.multi_files_report and MW.multiWorker.cnt % 2 == 0:
-            self.sendReport("success", doneCount=self.lastDone)
+        else: 
+            if MW.multiWorker.cnt == MW.multiWorker.total_files:
+                self.sendReport("success", doneCount=self.lastDone)
         MW.output("Killing ADB")
         os.system(R"platform-tools\adb.exe kill-server")
         MW.output("Deleting SubThread")
@@ -566,7 +593,8 @@ class MultiWorker(QThread):
         
     def run(self):
         multiFiles = os.listdir(MW.files_dir_)
-        MW.output(f"MultiFetch Start; fileCount={len(multiFiles)}")
+        self.total_files = len(multiFiles)
+        MW.output(f"MultiFetch Start; fileCount={self.total_files}")
         for (cnt, file) in enumerate(multiFiles, start=1):
             self.cnt = cnt
             MW.files_dir = MW.files_dir_ + file + '\\'
@@ -581,6 +609,7 @@ class MultiWorker(QThread):
             del MW.worker
             time.sleep(5)
             MW.count = 0
+        shutil.rmtree("temp/")
 
 
 class Debugger(threading.Thread):
