@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # tis4/form.py
-
+# pylint: skip-file
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
