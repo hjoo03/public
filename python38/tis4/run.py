@@ -141,7 +141,9 @@ class MainWindow(QMainWindow, Ui_Window):
         self.multiFiles.stateChanged.connect(self.multiFileMethod)
         self.btn_start.setEnabled(False)
         self.multi_files_report = False
-
+        self.le_indexmax.setValidator(self.onlyInt)
+        self.le_indexmin.setValidator(self.onlyInt)
+        self.le_ocv_offset.setValidator(self.onlyInt)
         self.loadDelay: int= 12
         self.fetchDelay: int = 0  # TODO: indexRange
         self.indexRange: tuple = (0, 0)
@@ -153,6 +155,7 @@ class MainWindow(QMainWindow, Ui_Window):
     def multiFileMethod(self):
         if self.multiFiles.isChecked():
             self.multi_files_report = True
+            self.lb_multifile.setHidden(False)
             if self.files_dir and self.files_dir != '/':
                 self.btn_start.setEnabled(True)
             self.btn_start.clicked.connect(self.multiStart)
@@ -162,6 +165,7 @@ class MainWindow(QMainWindow, Ui_Window):
             self.skipPush.setEnabled(False)
             self.skipRename.setEnabled(False)
         else:
+            self.lb_multifile.setHidden(True)
             if not self.multiFiles.isChecked():
                 self.btn_start.setEnabled(False)
             self.btn_start.clicked.connect(self.start)
@@ -597,6 +601,7 @@ class MultiWorker(QThread):
         MW.output(f"MultiFetch Start; fileCount={self.total_files}")
         for (cnt, file) in enumerate(multiFiles, start=1):
             self.cnt = cnt
+            MW.lb_multifile.setText(f"File {cnt}/{self.total_files}")
             MW.files_dir = MW.files_dir_ + file + '\\'
             MW.index()
             MW.start()
