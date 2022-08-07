@@ -19,7 +19,7 @@ from openpyxl.drawing.image import Image
 
 from logger import Logger
 from form import Ui_Window
-import manipulate_exif
+# import manipulate_exif
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + '\\'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + "\\images\\"
@@ -189,8 +189,8 @@ class MainWindow(QMainWindow, Ui_Window):
             self.btn_start.setEnabled(True)
             self.warning_error02()
             return
-        self.loadDelay = int(self.le_loaddelay.text())
-        self.fetchDelay = int(self.le_fetchdelay.text())
+        self.loadDelay = float(self.le_loaddelay.text())
+        self.fetchDelay = float(self.le_fetchdelay.text())
         self.error_report_number = str(self.le_erhp.text())
         self.opencv_offset = int(self.le_ocv_offset.text())
         self.opencv_confidence = float(self.le_ocv_confidence.text())
@@ -202,8 +202,17 @@ class MainWindow(QMainWindow, Ui_Window):
             parent=self,
             caption="Select a folder"
         ) + '/'
+        if ".data" not in os.listdir(self.original_files_dir):
+            self.warning_error03()
+            return
+        shutil.rmtree(path=os.getcwd() + "/temp", ignore_errors=True)
         self.files_dir = os.getcwd() + "/temp/data/"
-        shutil.copytree_noattr(src=self.original_files_dir, dst=self.files_dir)
+        # shutil.copytree_noattr(
+        shutil.copytree(
+            src=self.original_files_dir,
+            dst=self.files_dir,
+            ignore=shutil.ignore_patterns("*.data")
+            )
         self.output("Copied FileTree to /temp/data/")
         self.lb_filedir.setText(self.original_files_dir)
         self.lb_filedir.repaint()
@@ -277,10 +286,11 @@ class MainWindow(QMainWindow, Ui_Window):
                         return
                 for index in self.real_images:
                     src_filename = self.files_dir + f"{int(index):04}.jpg"
-                    dst_filename = self.files_dir + f"_{int(index):04}.jpg"
-                    manipulate_exif.set_time(index, src_filename, dst_filename)
-                    os.remove(src_filename)
-                    os.system(R"platform-tools\adb.exe push " + dst_filename +
+                    # dst_filename = self.files_dir + f"_{int(index):04}.jpg"
+                    # shutil.copy(src_filename, dst_filename)
+                    # manipulate_exif.set_time(index, src_filename, dst_filename)
+                    # os.remove(src_filename)
+                    os.system(R"platform-tools\adb.exe push " + src_filename +
                               f" sdcard/taobao/{self.ex.filename}/{int(index):04}.jpg")
             else:
                 os.system(Rf"platform-tools\adb.exe shell mkdir sdcard/taobao/{self.ex.filename}/")
@@ -303,10 +313,11 @@ class MainWindow(QMainWindow, Ui_Window):
                         return
                 for index in self.real_images:
                     src_filename = self.files_dir + f"{int(index):04}.jpg"
-                    dst_filename = self.files_dir + f"_{int(index):04}.jpg"
-                    manipulate_exif.set_time(index, src_filename, dst_filename)
-                    os.remove(src_filename)
-                    os.system(R"platform-tools\adb.exe push " + dst_filename +
+                    # dst_filename = self.files_dir + f"_{int(index):04}.jpg"
+                    # shutil.copy(src_filename, dst_filename)
+                    # manipulate_exif.set_time(index, src_filename, dst_filename)
+                    # os.remove(src_filename)
+                    os.system(R"platform-tools\adb.exe push " + src_filename +
                               f" sdcard/taobao/{self.ex.filename}/{int(index):04}.jpg")
             self.progressBar.setValue(0)
             self.progressBar.setRange(0, len(self.real_images))
@@ -340,6 +351,9 @@ class MainWindow(QMainWindow, Ui_Window):
     def warning_error02(self):
         QMessageBox.warning(self, "[E02] IOError", "No File Directory Selected!")
 
+    def warning_error03(self):
+        QMessageBox.warning(self, "[E03] IOError", "No .data file in directory!")
+
 class Worker(QThread):
     def __init__(self, offset, confidence):
         super().__init__()
@@ -371,7 +385,7 @@ class Worker(QThread):
                 MW.output("Restarted Debugger")
                 time.sleep(2)
                 done = []
-                self.launchTaobaoApp()
+                self.launch_taobao_app()
                 time.sleep(3)
                 Macro.single_click(Macro.btn_camera)
                 time.sleep(3)
@@ -390,13 +404,6 @@ class Worker(QThread):
             done.append(index)
             Macro.click(self.itemCoordinates[(count + skip_constant) % 8])
             time.sleep(MW.loadDelay)
-            Macro.before_locate()
-            if not pyautogui.locateOnScreen(
-                    BASE_DIR + "taobaoItemList.png",
-                    region=(0, 30 - self.offset, 460 + self.offset, 400 + self.offset),
-                    confidence=self.confidence):
-                MW.output("Sleeping Extra Time")
-                time.sleep(20 - MW.loadDelay)
             if not self.fetch_data(index, len(MW.real_images) - count + 1):
                 skip_constant = 7 - (count % 8)
                 self.skips.append((index, len(MW.real_images) - count + 1))
@@ -453,8 +460,8 @@ class Worker(QThread):
         self.end_time = datetime.datetime.now()
         self.total_time = self.end_time - self.start_time
         MW.output(f"Fetch Done; total={MW.count}; "
-                  "{self.total_time.total_seconds() // 3600}h "
-                  "{self.total_time.total_seconds() // 60}m")
+                  f"{self.total_time.total_seconds() // 3600}h "
+                  f"{self.total_time.total_seconds() // 60}m")
         for i in done:
             os.system(R"platform-tools\adb.exe shell rm "
                       f"sdcard/taobao/{MW.ex.filename}/{i:04}.jpg")
@@ -464,7 +471,7 @@ class Worker(QThread):
             self.send_report("success", done_count=self.last_done)
         else:
             if MW.multi_worker.cnt == MW.multi_worker.total_files:
-                self.send_report("success", done_count=self.last_done)
+                self.send_report("success", done_count=MW.multi_worker.items_count + self.last_done)
         MW.output("Killing ADB")
         os.system(R"platform-tools\adb.exe kill-server")
         MW.output("Deleting SubThread")
@@ -474,9 +481,15 @@ class Worker(QThread):
         self.quit()
 
     def fetch_data(self, index, write_row) -> 0 or 1:
+        Macro.before_locate()
+        if not pyautogui.locateOnScreen(
+                BASE_DIR + "taobaoItemList.png",
+                region=(0, 30 - self.offset, 460 + self.offset, 600 + self.offset),
+                confidence=self.confidence):
+            MW.output("Sleeping Extra Time")
+            time.sleep(20 - MW.loadDelay)
         links = []
         # urls = []
-        Macro.before_locate()
         error = pyautogui.locateOnScreen(
             BASE_DIR + "taobaoError.png",
             region=(
@@ -526,28 +539,34 @@ class Worker(QThread):
                     confidence=self.confidence - 0.05):
                 MW.output("errorLoading Detected", error=True)
                 time.sleep(30)
-        offset = 0
+        offsets = {0: 0, 1: -50, 2: -100, 3: -150, -1: 114}
+        offset_ = 1
         Macro.before_locate()
-        if not pyautogui.locateOnScreen(
-                BASE_DIR + "taobaoCharacterResult.png",
+        if pyautogui.locateOnScreen(  # character result
+                BASE_DIR + "taobaoEvent1_88.png",
                 region=(
-                        0,
-                        240 - self.offset,
-                        100 + self.offset,
-                        60 + self.offset
+                    140 - self.offset // 2,
+                    350 - self.offset // 2,
+                    200 + self.offset // 2,
+                    40 + self.offset // 2
                 ),
                 confidence=self.confidence):
+            offset_ = -1
+        else:
+            """
             if not pyautogui.locateOnScreen(
-                    BASE_DIR + "taobaoFilter1.png",
+                    BASE_DIR + "taobaoCharacterResult.png",
                     region=(
                             0,
-                            170 - self.offset,
-                            330 + self.offset,
+                            240 - self.offset,
+                            100 + self.offset,
                             60 + self.offset
                     ),
-                    confidence=self.confidence - 0.05):
+                    confidence=self.confidence):
+            """
+            if True:
                 if not pyautogui.locateOnScreen(
-                        BASE_DIR + "taobaoFilter2.png",
+                        BASE_DIR + "taobaoFilter1.png",
                         region=(
                                 0,
                                 170 - self.offset,
@@ -556,7 +575,7 @@ class Worker(QThread):
                         ),
                         confidence=self.confidence - 0.05):
                     if not pyautogui.locateOnScreen(
-                            BASE_DIR + "taobaoFilter3.png",
+                            BASE_DIR + "taobaoFilter2.png",
                             region=(
                                     0,
                                     170 - self.offset,
@@ -565,7 +584,7 @@ class Worker(QThread):
                             ),
                             confidence=self.confidence - 0.05):
                         if not pyautogui.locateOnScreen(
-                                BASE_DIR + "taobaoFilter4.png",
+                                BASE_DIR + "taobaoFilter3.png",
                                 region=(
                                         0,
                                         170 - self.offset,
@@ -574,7 +593,7 @@ class Worker(QThread):
                                 ),
                                 confidence=self.confidence - 0.05):
                             if not pyautogui.locateOnScreen(
-                                    BASE_DIR + "taobaoFilter5.png",
+                                    BASE_DIR + "taobaoFilter4.png",
                                     region=(
                                             0,
                                             170 - self.offset,
@@ -583,7 +602,7 @@ class Worker(QThread):
                                     ),
                                     confidence=self.confidence - 0.05):
                                 if not pyautogui.locateOnScreen(
-                                        BASE_DIR + "taobaoFilter6.png",
+                                        BASE_DIR + "taobaoFilter5.png",
                                         region=(
                                                 0,
                                                 170 - self.offset,
@@ -592,37 +611,54 @@ class Worker(QThread):
                                         ),
                                         confidence=self.confidence - 0.05):
                                     if not pyautogui.locateOnScreen(
-                                            BASE_DIR + "taobaoItemList.png",
+                                            BASE_DIR + "taobaoFilter6.png",
                                             region=(
                                                     0,
-                                                    30 - self.offset,
-                                                    460 + self.offset,
-                                                    200 + self.offset
+                                                    170 - self.offset,
+                                                    330 + self.offset,
+                                                    60 + self.offset
                                             ),
-                                            confidence=self.confidence):
-                                        MW.output("Offset Level = 2")
-                                        offset = 100
-                                    else:
-                                        MW.output("Offset Level = 1")
-                                        offset = 50
-        else:
-            MW.output("Offset Level = -1")
-            offset = -170
+                                            confidence=self.confidence - 0.05):
+                                        if not pyautogui.locateOnScreen(
+                                                BASE_DIR + "taobaoItemList.png",
+                                                region=(
+                                                        0,
+                                                        30 - self.offset,
+                                                        460 + self.offset,
+                                                        200 + self.offset
+                                                ),
+                                                confidence=self.confidence):
+                                            offset_ = 3
+                                        else:
+                                            offset_ = 2
+            else:
+                # offset_ += -1
+                pass
+        if pyautogui.locateOnScreen(
+                BASE_DIR + "taobaoEvent1_88.png",
+                region=(
+                    140 - self.offset,
+                    130 - self.offset,
+                    200 + self.offset,
+                    150 + self.offset
+                ),
+                confidence=self.confidence):
+            offset_ += -1
+        if offset_ != 0:
+            MW.output(f"Offset Level = {offset_}")
+        offset = offsets[offset_]
         for result in (Macro.result_1, Macro.result_2):
             c = 221 if result[2] == 2 else 0
             Macro.before_locate()
-            time.sleep(1)  # Load Images
+            time.sleep(1.5)  # Load Images
             pyautogui.screenshot(f"__temp{c}.png",
                                  region=(
                                      1 + c,
-                                     228 - offset,
+                                     286 + offset,
                                      216,
                                      216
                                  ))
-            if offset == -170:
-                Macro.click((result[0], result[1] + 200))
-            else:
-                Macro.click(result)
+            Macro.click((result[0], result[1] + offset))
             time.sleep(2.5)
             if pyautogui.locateOnScreen(
                     BASE_DIR + "taobaoVerify.png",
@@ -640,7 +676,13 @@ class Worker(QThread):
             try:
                 copy_link_btn = pyautogui.center(pyautogui.locateOnScreen(
                     BASE_DIR + "taobaoCopyLink.png",
-                    confidence=self.confidence
+                    region=(
+                        0,
+                        400 - self.offset,
+                        440 + self.offset,
+                        200 + self.offset
+                    ),
+                    confidence=0.3 + (self.confidence * 0.6)
                 ))
             except TypeError:
                 MW.count += 1
@@ -695,7 +737,7 @@ class Worker(QThread):
         self.connect_debugger()
         MW.output("Attached Debugger to the device")
         time.sleep(5)
-        self.launchTaobaoApp()
+        self.launch_taobao_app()
         MW.output("Launched Taobao App")
         Macro().move_window()
         time.sleep(3)
@@ -733,6 +775,10 @@ class Worker(QThread):
 
     @staticmethod
     def launch_taobao_app():
+        os.system(R'adb shell "find /mnt/sdcard/taobao/ | while read f; '
+                  R'do am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE '
+                  R'-d \"file://${f}\"; done"')
+        time.sleep(1)
         os.system(R"platform-tools\adb.exe shell am start -n "
                   "com.taobao.taobao/com.taobao.tao.TBMainActivity")
 
@@ -766,6 +812,7 @@ class MultiWorker(QThread):
         super().__init__()
         log.info("MultiWorker Thread Initiated")
         self.cnt = 1
+        self.items_count = 0
 
     def run(self):
         multi_files = os.listdir(MW.files_dir_)
@@ -785,6 +832,7 @@ class MultiWorker(QThread):
             MW.worker_finished = False
             del MW.worker
             time.sleep(5)
+            self.items_count += MW.count
             MW.count = 0
         shutil.rmtree("temp/")
 

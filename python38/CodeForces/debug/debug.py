@@ -19,7 +19,7 @@ class Debug:
                 self.count_1 += 1
                 return
 
-        if type(arg1) == str:
+        if isinstance(arg1, str):
             if "@@@@@" in arg1:
                 print(f"debug breakpoint @@@@@ #{self.count_5}; "
                       f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}]")
