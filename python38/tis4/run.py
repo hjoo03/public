@@ -156,6 +156,7 @@ class MainWindow(QMainWindow, Ui_Window):
         self.opencv_confidence: float = 0.9
 
         self.count = 0
+        self.multi_file_method()
 
     def multi_file_method(self):
         if self.multiFiles.isChecked():
@@ -164,6 +165,8 @@ class MainWindow(QMainWindow, Ui_Window):
             if self.files_dir and self.files_dir != '/':
                 self.btn_start.setEnabled(True)
             self.btn_start.clicked.connect(self.multi_start)
+            self.btn_start.clicked.disconnect(self.start)
+            self.btn_index.clicked.disconnect(self.index)
             self.btn_index.setEnabled(False)
             self.skipRename.setChecked(False)
             self.skipPush.setChecked(False)
@@ -202,9 +205,10 @@ class MainWindow(QMainWindow, Ui_Window):
             parent=self,
             caption="Select a folder"
         ) + '/'
-        if ".data" not in os.listdir(self.original_files_dir):
-            self.warning_error03()
-            return
+        if self.multiFiles.isChecked():
+            if ".data" not in os.listdir(self.original_files_dir):
+                self.warning_error03()
+                return
         shutil.rmtree(path=os.getcwd() + "/temp", ignore_errors=True)
         self.files_dir = os.getcwd() + "/temp/data/"
         # shutil.copytree_noattr(
@@ -333,8 +337,8 @@ class MainWindow(QMainWindow, Ui_Window):
         except OSError as why:
             errors.append(str(why))
         if errors:
-            shutil.rmtree("temp/")
-            raise Error(errors)
+            log.error(error for error in errors)
+            self.output(str(error) for error in errors)          
 
     def output(self, msg, error=False):
         if error:
@@ -357,7 +361,8 @@ class MainWindow(QMainWindow, Ui_Window):
 class Worker(QThread):
     def __init__(self, offset, confidence):
         super().__init__()
-        log.info("Worker Thread Initiated")
+        log.info("Worker Thread Initiated; "
+                 "offset=%d, confidence=%f", offset, confidence)
         self.itemCoordinates = []
         self.itemIndices = []
         self.count = 0
@@ -650,7 +655,7 @@ class Worker(QThread):
         for result in (Macro.result_1, Macro.result_2):
             c = 221 if result[2] == 2 else 0
             Macro.before_locate()
-            time.sleep(1.5)  # Load Images
+            time.sleep(3)  # Load Images
             pyautogui.screenshot(f"__temp{c}.png",
                                  region=(
                                      1 + c,
@@ -659,7 +664,7 @@ class Worker(QThread):
                                      216
                                  ))
             Macro.click((result[0], result[1] + offset))
-            time.sleep(2.5)
+            time.sleep(4)
             if pyautogui.locateOnScreen(
                     BASE_DIR + "taobaoVerify.png",
                     region=(
@@ -775,9 +780,10 @@ class Worker(QThread):
 
     @staticmethod
     def launch_taobao_app():
-        os.system(R'adb shell "find /mnt/sdcard/taobao/ | while read f; '
+        os.system(R'platform-tools\adb.exe shell "find /mnt/sdcard/taobao/ | while read f; '
                   R'do am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE '
                   R'-d \"file://${f}\"; done"')
+        MW.output("Scanned Media")
         time.sleep(1)
         os.system(R"platform-tools\adb.exe shell am start -n "
                   "com.taobao.taobao/com.taobao.tao.TBMainActivity")

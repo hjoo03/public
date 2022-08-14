@@ -1,0 +1,3111 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>서경대학교 학부 장바구니신청(전공선택)</title>
+        <link rel="stylesheet" type="text/css" href="/course_shop/Styles.css"/>
+        <script type="text/javascript" charset="UTF-8" src="//code.jquery.com/jquery-1.7.min.js"></script>
+        <script type="text/javascript" charset="UTF-8" src="/course_shop/netfunnel.js"></script>
+        <script type="text/javascript" charset="UTF-8" src="/course_shop/smartPop/jquery.smartPop.js"></script>
+        <link rel="stylesheet" type="text/css" href="/course_shop/smartPop/jquery.smartPop.css"/>
+        <script type="text/javascript" src="/course_shop/prototype.js"></script>
+        <script type="text/javascript" charset="UTF-8">
+            jQuery.noConflict();
+
+            function check_showLoading() {
+                document.all.check_loading.style.display = '';
+                document.all.check_loading.focus();
+                document.body.style.overflow = "hidden";
+            }
+            function check_hideLoading() {
+                document.all.check_loading.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            function showLoading() {
+                document.all.loading.style.display = '';
+                document.all.loading.focus();
+                document.body.style.overflow = "hidden";
+            }
+            function hideLoading() {
+                document.all.loading.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            function left_showLoading() {
+                document.all.maj_loading.style.display = '';
+                document.all.maj_loading.focus();
+                document.body.style.overflow = "hidden";
+
+            }
+            function left_hideLoading() {
+                document.all.maj_loading.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            //onload event
+            window.onload = function() {
+                hideLoading();
+                parent.frameLeft.toggleDisable(false);
+                var error = 'COMPLETE';
+                if (error.length > 0) {
+                    if (error == "COMPLETE") {
+                        alert('장바구니  담기가 완료되었습니다');
+                        toggleDisabled(true);
+                        window.open('/course_shop/register/cancel_shop.do?method=list', 'frameMain3');
+                    } else if (error == "OVERCNT") {
+                        alert('수강 제한인원이 초과하였습니다');
+                        toggleDisabled(true);
+                        window.open('/course_shop/register/cancel_shop.do?method=list', 'frameMain3');
+                    } else {
+                        alert('담는데 실패하였습니다');
+                        toggleDisabled(true);
+                        window.open('/course_shop/register/cancel_shop.do?method=list', 'frameMain3');
+                    }
+                }
+
+                if (document.form1.COL.value == null || document.form1.COL.value == "") {
+                    //prototype ajax호출
+
+                    new Ajax.Request('/course_shop/register/major_shop.do?method=infoloadMain2',{
+                        method: 'post',
+                        parameters: {
+                            stnt_numb: '2022305080'
+                        },
+                        onSuccess: function(req) {
+                            var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                            if (ct == 'text/javascript;charset=UTF-8') {
+                                return;
+                            }
+                            if (ct == 'text/html;charset=UTF-8') {
+                                $('container').innerHTML = req.responseText;
+                                return;
+                            }
+
+                            json = (req.responseText).evalJSON();
+                            if (json.COL.length > 0) {
+                                document.form1.COL.value = json.COL;
+                                document.form1.SUBJ_STD.value = json.SUBJ_STD;
+                                document.form1.MAJ.value = json.MAJ;
+                                //					document.form1.S_SCHYR.value		=	json.S_SCHYR;
+                            } else {
+                                alert('로그인한 사용자의 대학, 학부, 전공이 등록되어있지 않습니다\n관리자에게 문의하세요');
+                            }
+                            toggleDisabled(false);
+                            parent.frameMain3.toggleDisabled(false);
+                            hideLoading();
+                            return;
+                        },
+                        onFailure: function() {
+                            alert('사용자 정보 조회중 에러가 발생했습니다.\n관리자에게 문의하세요.');
+                        }
+                    });
+                }
+
+                top.NetFunnel_Complete({}, function(ev, ret) {});
+
+            }
+
+            //수강신청 체크
+            function doSubmit(subj_cd, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, col, subj_std, maj, other_dept_ysno, complete_cd, subj_pont, subj_time, day1, day2, day3, day4, day5, time11, time12, time13, time14, time21, time22, time23, time24, time31, time32, time33, time34, time41, time42, time43, time44, time51, time52, time53, time54, subj_nm, dorn_flag, cyber_ysno, rotc_ysno) {
+
+                var other_ysno = "N";
+                if (confirm("선택한 과목을 담으시겠습니까?") == true) {
+                    //졸업예정자 체크
+                    if (subj_cd.substring(2, 6) == '1999' || subj_cd.substring(2, 6) == '5999') {
+                        if (subj_cd == 'ED1999') {
+                            if (1 == '1') {
+                                if (1 < 6) {
+                                    alert('선택하신 강좌는 졸업예정자만 담을 수 있습니다');
+                                    return;
+                                }
+                            } else if (1 == '2') {
+                                if (1 < 2) {
+                                    alert('선택하신 강좌는 졸업예정자만 담을 수 있습니다');
+                                    return;
+                                }
+                            }
+
+                        } else if (1 == '1') {
+                            if (1 < 7 && 1 < 119) {
+                                alert('선택하신 강좌는 졸업예정자만 담을 수 있습니다');
+                                return;
+                            }
+                        } else if (1 == '2') {
+                            if (1 < 3 && 1 < 49) {
+                                alert('선택하신 강좌는 졸업예정자만 담을 수 있습니다');
+                                return;
+                            }
+                        }
+                    }
+
+                    if (complete_cd == '24' || complete_cd == '25') {
+                        if (19 < 30) {
+                            alert('총이수학점이 30학점 미만은 신청할 수 없습니다');
+                            return;
+                        }
+                    }
+                    // 입학년도에 따른 수강 제한
+                    if (2022 < '2017') {
+
+                        if (subj_cd == 'GE1201' || //상상력에의초대 
+                        subj_cd == 'GE1202' || //문제해결의 힘
+                        subj_cd == 'GE1203' || //홀리스틱리더쉽
+                        subj_cd == 'GE1204' || //내인생의성공학실패학
+                        subj_cd == 'GE1205') //직무리허설
+                        {
+                            Msg = "선택하신 과목은 2017학년도 입학생 이후만 수강가능 교과목입니다!!!\n";
+                            alert(Msg);
+                            return;
+                        }
+
+                        //전산실무인증교과목 체크
+                        var Msg = "";
+                        if (// '13041600' ||	//금융정보공학과
+                        13040700 == '13041500' || //소프트웨어학과
+                        13040700 == '13041300' || //인터넷정보학과
+                        13040700 == '13041000' || //전자공학과
+                        13040700 == '13041400' || //전자상거래학과
+                        13040700 == '13040900' || //정보통신공학과
+                        13040700 == '13040700' || //컴퓨터공학과
+                        13040700 == '13040100' || //컴퓨터과학과
+                        13040700 == '13030600' || //전산정보관리학과
+                        13040700 == '13030800' || //정보관리학과
+                        13040700 == '13041900' || //전자통신컴퓨터공학부
+                        13040700 == '13042500'//전자통신컴퓨터공학부
+                        ) {
+                            if (subj_cd == 'GE3811' || //멀티미디어실무
+                            subj_cd == 'GE3813' || //프로그래밍응용실무
+                            subj_cd == 'GE3815' || //컴퓨터그래픽스실무
+                            subj_cd == 'GE3817' || //인터넷실용실무
+                            subj_cd == 'GE3812' || //컴퓨터통신실무
+                            subj_cd == 'GE3814' || //PC구조실무
+                            subj_cd == 'GE3816' || //컴퓨터프로그래밍실무
+                            subj_cd == 'GE3818' || subj_cd == 'GE4201' || //워드프로세서실무
+                            subj_cd == 'GE4202' || //프레젠테이션실무
+                            subj_cd == 'GE4203') //스프레드시트실무) 		//데이터베이스실무
+                            {
+                                Msg = "선택하신 과목은 전산실무인증교과목입니다!!!\n";
+                                Msg += "소속학과가 다음과 같은 학생은 수강신청할 수 없습니다\n\n";
+                                Msg += " * 전산실무교과목 수강신청 불가학과\n\n";
+                                Msg += "  - 정보관리학과\n";
+                                Msg += "  - 전산정보관리학과\n";
+                                Msg += "  - 컴퓨터과학과\n";
+                                Msg += "  - 컴퓨터공학과\n";
+                                Msg += "  - 정보통신공학과\n";
+                                Msg += "  - 전자공학과\n";
+                                Msg += "  - 인터넷정보학과\n";
+                                Msg += "  - 전자상거래학과\n";
+                                Msg += "  - 소프트웨어학부\n";
+                                //Msg+= "  - 금융정보공학과\n";
+                                Msg += "  - 전자통신컴퓨터공학부";
+                                Msg += "  - 산업경영시스템공학과";
+                                alert(Msg);
+                                return;
+                            }
+                        }
+
+                        //진로선택과자기개발 수강 불가 학과 지정
+                        if (13040700 == '13031200' || //군사학과
+                        13040700 == '13042400' || //나노융합공학과
+                        13040700 == '13050500' || //디자인학부
+                        13040700 == '13050600' || //음악학부
+                        13040700 == '13051500' || //뮤지컬학과
+                        13040700 == '13051400' || //실용음악학과
+                        13040700 == '13051200' || //공연예술학부
+                        13040700 == '13051300' || //영화영상학과
+                        13040700 == '13050800' || //무용예술학과
+                        13040700 == '13050900'//미용예술학과(UC전공)
+                        ) {
+                            if (subj_cd == 'GE1000') //진로선택과자기개발
+                            {
+                                Msg = "선택하신 과목은 진로선택과자기개발입니다!!!\n";
+                                Msg += "소속학과가 다음과 같은 학생은 수강신청할 수 없습니다\n\n";
+                                Msg += " * 진로선택과자기개발 수강 불가 학과\n\n";
+                                Msg += "  - 군사학과\n";
+                                Msg += "  - 나노융합공학과\n";
+                                Msg += "  - 디자인학부\n";
+                                Msg += "  - 음악학부\n";
+                                Msg += "  - 뮤지컬학과\n";
+                                Msg += "  - 실용음악학과\n";
+                                Msg += "  - 공연예술학부\n";
+                                Msg += "  - 영화영상학과\n";
+                                Msg += "  - 무용예술학과\n";
+                                Msg += "  - 미용예술학과";
+                                alert(Msg);
+                                return;
+                            }
+                        }
+
+                        //전산실무인증교과목 체크(산업공학과 2000학번만 신청할 수 있도록 함)
+                        var sStntNumbTmp = "" + 2022305080;
+                        if (13040700 == '13040300') {
+                            if (sStntNumbTmp.substring(0, 4) != '2000') {
+                                if (subj_cd == 'GE3811' || //멀티미디어실무
+                                subj_cd == 'GE3813' || //프로그래밍응용실무
+                                subj_cd == 'GE3815' || //컴퓨터그래픽스실무
+                                subj_cd == 'GE3817' || //인터넷실용실무
+                                subj_cd == 'GE3812' || //컴퓨터통신실무
+                                subj_cd == 'GE3814' || //PC구조실무
+                                subj_cd == 'GE3816' || //컴퓨터프로그래밍실무
+                                subj_cd == 'GE3818' || //데이터베이스실무
+                                subj_cd == 'GE4201' || //워드프로세서실무
+                                subj_cd == 'GE4202' || //프레젠테이션실무
+                                subj_cd == 'GE4203') {
+                                    Msg = "선택하신 과목은 전산실무인증교과목입니다 !!!\n";
+                                    Msg += "산업공학과 2000학번만 수강신청할 수 있습니다.";
+                                    alert(Msg);
+                                    return;
+                                }
+                            }
+                        }
+                        //발표토론 수강 불가 학과 지정
+                        if (00000000 == '13042401' || //나노융합공학과
+                        13040700 == '13050900'//미용예술학과(UC전공)
+                        ) {
+                            if (subj_cd == 'GE1002') //발표토론과글쓰기
+                            {
+                                Msg = "선택하신 과목은 발표토론과글쓰기입니다!!!\n";
+                                Msg += "소속학과가 다음과 같은 학생은 수강신청할 수 없습니다\n\n";
+                                Msg += " * 발표토론과글쓰기 수강 불가 학과\n\n";
+                                Msg += "  - 나노융합공학과\n";
+                                Msg += "  - 미용예술학과";
+                                alert(Msg);
+                                return;
+                            }
+                        }
+                        //WWW,커뮤니 수강 불가 학과 지정
+                        if (00000000 == '13042401' || //나노융합공학과
+                        13040700 == '13050900'//미용예술학과(UC전공)
+                        ) {
+                            if (subj_cd == 'GE1805' || //발표토론과글쓰기
+                            subj_cd == 'GE1806' || subj_cd == 'GE1807' || subj_cd == 'GE1808') {
+                                Msg = "선택하신 과목은 \n";
+                                Msg += "소속학과가 다음과 같은 학생은 수강신청할 수 없습니다\n\n";
+                                Msg += "  - 나노융합공학과\n";
+                                Msg += "  - 미용예술학과";
+                                alert(Msg);
+                                return;
+                            }
+                        }
+                    } else {
+                        if (subj_cd == 'GE3815' || //컴퓨터그래픽스실무
+                        subj_cd == 'GE3816' || //컴퓨터프로그래밍실무
+                        subj_cd == 'GE4201' || //워드프로세서실무
+                        subj_cd == 'GE4202' || //프레젠테이션실무
+                        subj_cd == 'GE4203') //스프레드시트실무
+                        {
+                            Msg = "선택하신 과목은 2016학년도 입학생 까지만 수강가능 교과목입니다!!!\n";
+                            alert(Msg);
+                            return;
+                        }
+                    }
+
+                    /**************************************************
+		//타과수강금지 체크(타과강좌 조회일 경우)
+		if(document.form1.TYPE.value == '2'){
+		
+			//대학,학부,전공이 같을경우 타과수강금지여부가 'Y' 이더라도 자기전공이므로 등록
+			if( ( document.form1.COL.value == 13040000 
+			   && document.form1.SUBJ_STD.value == 13040700  
+		 	   && document.form1.MAJ.value == 00000000 )  
+		 	   && other_dept_ysno == "Y" 
+		 	   )
+		 	{
+				other_ysno = "N"; //타과전공여부 체크(N);
+			}
+			//대학,학부,전공이 같을경고 타과수강금지여부가 'N' 당연히 등록
+			else if(( document.form1.COL.value == 13040000 
+					&& document.form1.SUBJ_STD.value == 13040700  
+				 	&& document.form1.MAJ.value == 00000000 )  
+				 	&& other_dept_ysno == "N" 
+			 		)
+			 {
+				other_ysno = "N";	//타과전공 여부 체크(N)
+		 	 }
+		 	 else{
+		 	 	//대학,학과,전공이 다르고 타과수강금지여부가 'Y'인경우 타과수강금지
+		 	 	if( ( 13040000 != col 
+		 	 	   || 13040700 != subj_std  
+			 	   || 00000000 != maj )  
+			 	   && other_dept_ysno == "Y" )
+			 	{
+			 	  	alert('타과학생들이 수강할 수 없는 타과강좌입니다\n신청할 수 없습니다');
+			   		return false;
+			 	}
+			 	//대학,학부,전공이 다르지만 타과수강금지여부가 'N'일 경우 타과수강가능
+			 	//또한 이수구분이 전공일경우(21~23)에는 이수구분변경 POP선택해야함
+			 	if( ( 13040000 != col || 13040700 != subj_std  
+			 	  || 00000000 != maj )  && other_dept_ysno == 'N' && 
+			 	  ( complete_cd == '21' || complete_cd == '22' || complete_cd == '23' )
+			 	  ){
+					other_ysno = "Y";	//타과강좌일 경우(일선,부전,복수 선택함)
+			 	  }
+		 	 }
+		 	 
+		//타과수강금지 체크(교과목 검색일 경우)
+		}else if(document.form1.TYPE.value == '3'){
+			//대학,학과,전공이 다르고 타과수강금지여부가 'Y'인경우 타과수강금지
+			if( ( 13040000 != col || 13040700 != subj_std  
+		 	    || 00000000 != maj)   && other_dept_ysno == "Y" 
+		 	  ) {
+		 	  	alert('타과학생들이 수강할 수 없는 타과강좌입니다\n신청할 수 없습니다');
+		   		return false;
+		 	 }
+		 	 //대학,학부,전공이 다르지만 타과수강금지여부가 'N'일 경우 타과수강가능
+			 	//또한 이수구분이 전공일경우(21~23)에는 이수구분변경 POP선택해야함
+		 	 if(( 13040000 != col || 13040700 != subj_std  
+		 	    || 00000000 != maj)   && other_dept_ysno == "N" && 
+		 	    ( complete_cd == '21' || complete_cd == '22' || complete_cd == '23' ) ){
+					other_ysno = "Y";	//타과강좌일 경우(일선,부전,복수 선택함)
+		 	 }
+		}
+**************************************************/
+
+                    //최대수강신청학점 초과여부 조회
+                    if (parent.frameLeft.minMaxCheckLeft(subj_pont)) {
+
+                        //화면상 수강제한,신청인원을 기준으로 인원체크 1
+                        //뒷단에 Insert직전에 DB Select로 신청인원을 한번더 체크함
+                        top.NetFunnel_Action({
+                            action_id: "submit",
+                            action_id: "submit",
+                            popup_target: top.frameMain2,
+                            use_frame_block: true,
+                            frame_block_list: [{
+                                win: top.frameLeft
+                            }, {
+                                win: top.frameMain2
+                            }, {
+                                win: top.frameMain3
+                            }]
+                        }, function(ev, ret) {
+                            if (Number(stnt_cnt) >= Number(taking_limit)) {
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                alert('장바구니 제한인원을 초과하였습니다\n담을 수 없습니다');
+                                return false;
+                            }
+
+                            //value Setting
+                            document.form1.SUBJ_CD.value = subj_cd;
+                            document.form1.CLSS_NUMB.value = clss_numb;
+                            document.form1.SUBJ_PONT.value = subj_pont;
+                            document.form1.COMPLETE_CD.value = complete_cd;
+                            document.form1.SUBJ_PONT.value = subj_pont;
+                            document.form1.SUBJ_TIME.value = subj_time;
+
+                            document.form1.SUBJ_NM.value = subj_nm;
+                            document.form1.TAKING_LIMIT_CNT.value = taking_limit;
+                            document.form1.STNT_CNT.value = stnt_cnt;
+                            document.form1.RE_STNT_CNT.value = re_stnt_cnt;
+
+                            document.form1.RE_LECT_YEAR.value = "";
+                            document.form1.RE_LECT_TERM.value = "";
+                            document.form1.RE_SUBJ_CD.value = "";
+                            document.form1.RE_CLSS_NUMB.value = "";
+                            document.form1.TLSN_FLAG.value = "";
+
+                            if (document.form1.TYPE.value == "1") {
+                                document.form1.TYPE.value = "1";
+                            } else if (document.form1.TYPE.value == "2") {
+                                document.form1.TYPE.value = "2";
+                            } else if (document.form1.TYPE.value == "3") {
+                                document.form1.TYPE.value = "3";
+                            } else if (document.form1.TYPE.value == "4") {
+                                document.form1.TYPE.value = "4";
+                            } else if (document.form1.TYPE.value == "5") {
+                                document.form1.TYPE.value = "5";
+                            } else {
+                                document.form1.TYPE.value = "1";
+                            }
+                            toggleDisabled(true);
+                            parent.frameMain3.toggleDisabled(true);
+
+                            /*
+			//강의시간 중복 여부 체크
+			if(parent.frameMain3.dayTimeCheck(day1 ,day2, day3, day4, day5
+											 ,time11 ,time12, time13, time14
+											 ,time21 ,time22, time23, time24
+											 ,time31 ,time32, time33, time34
+											 ,time41 ,time42, time43, time44
+											 ,time51 ,time52, time53, time54
+											 ,subj_nm, dorn_flag
+											 ) )
+			{
+											 
+					//사이버강좌(원격강좌) 1개이상 신청했는지 여부 체크
+					if( parent.frameMain3.cyberCntCheck(cyber_ysno) ){
+					*/
+                            //수업시간이 중복이 아닐경우에 현재 강좌가 자신의 강좌인지 타과강좌인지 여부 체크
+                            linkCheck(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_dept_ysno, col, subj_std, maj, complete_cd, rotc_ysno);
+                            /*												
+					}else{
+						toggleDisabled(false);
+						parent.frameMain3.toggleDisabled(false);
+                        NetFunnel_goComplete();  
+						return;
+					}
+                    
+			
+              } */
+                        });
+                        //넷퍼넬 고함수 종료
+
+                    } else {
+
+                        return;
+
+                    }
+
+                }
+                //end confirm
+            }
+            //end function
+            /////////////////////////////////////////
+            /////////////////////////////////////////
+
+            //	LINK_DEPT_CHECK
+            function linkCheck(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_dept_ysno, col, subj_std, maj, complete_cd, rotc_ysno) {
+                check_showLoading();
+
+                //자과강좌 또는 공통교양일 경우에는 이수구분 변경 여부 체크 안함
+                if (document.form1.TYPE.value == '1' || document.form1.TYPE.value == '4' || ('N' == 'Y' && '13040000' == col && '13040700' == subj_std && '00000000' == maj) || ('N' == 'Y' && col == '13010000' && subj_std == '13010100')
+                ) {
+                    other_ysno = "N";
+                    check1(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno);
+                } else {
+
+                    new Ajax.Request('/course_shop/register/major_shop.do?method=linkCheck',{
+                        method: 'post',
+                        parameters: {
+                            cole_cd: '13040000',
+                            dept_cd: '13040700',
+                            majr_cd: '00000000',
+                            link_cole_cd: col,
+                            link_dept_cd: subj_std,
+                            link_majr_cd: maj
+                        },
+                        onSuccess: function(req) {
+                            var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                            if (ct == 'text/javascript;charset=UTF-8') {
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                return;
+                            }
+                            if (ct == 'text/html;charset=UTF-8') {
+                                $('container').innerHTML = req.responseText;
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                return;
+                            }
+
+                            var json = req.responseText.evalJSON();
+
+                            if (json.CNT.length > 0) {
+                                if (Number(json.CNT) > 0) {
+                                    //선택한 강좌가 전공인지 아니면 일선,부전,복수 인지 여부를 체크
+                                    other_ysno = "N";
+                                    //원래 수업으로 들어감
+                                    //교과목명중복여부 체크
+                                    check1(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno);
+                                } else {
+                                    if ((complete_cd == '21' || complete_cd == '22' || complete_cd == '23' || complete_cd == '26' || complete_cd == '27') && other_dept_ysno == "N") {
+                                        other_ysno = "Y";
+                                        //타과강좌일 경우(일선,부전,복수 선택함)
+                                    } else if (other_dept_ysno == "N") {
+                                        other_ysno = "N";
+                                    } else if (other_dept_ysno == "Y") {
+                                        check_hideLoading();
+                                        top.NetFunnel_Complete({}, function(ev, ret) {});
+                                        alert('타과학생들이 수강할 수 없는 타과강좌입니다\n신청할 수 없습니다');
+                                        toggleDisabled(false);
+                                        parent.frameMain3.toggleDisabled(false);
+                                        return false;
+                                    } else {
+                                        check_hideLoading();
+                                        top.NetFunnel_Complete({}, function(ev, ret) {});
+                                        alert('타과수강 가능한 강좌 여부 조회중\n에러가 발생했습니다. 관리자에게 문의하세요.');
+                                        toggleDisabled(false);
+                                        parent.frameMain3.toggleDisabled(false);
+                                        return false;
+                                    }
+                                    //교과목명중복여부 체크
+                                    check1(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno);
+                                }
+                            } else {
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                            }
+                        },
+                        onFailure: function() {
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                        }
+                    });
+                }
+            }
+
+            //중복수강 체크
+            function check1(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno) {
+                //prototype ajax호출
+                new Ajax.Request('/course_shop/register/major_shop.do?method=check1',{
+                    method: 'post',
+                    parameters: {
+                        lect_year: '2022',
+                        lect_term: '2',
+                        stnt_numb: '2022305080',
+                        subj_cd: subj_cd,
+                        clss_numb: clss_numb,
+                        subj_nm: subj_nm
+                    },
+                    onSuccess: function(req) {
+                        var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                        if (ct == 'text/javascript;charset=UTF-8') {
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+                        if (ct == 'text/html;charset=UTF-8') {
+                            $('container').innerHTML = req.responseText;
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+                        //값이 0보다 크면 중복수강임
+                        if (req.responseText == '0') {
+                            //선수강강좌 수강여부체크
+                            preSubject(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno);
+                        } else {
+                            check_hideLoading();
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            alert('장바구니에 담긴 과목입니다\n수강하실수 없습니다.');
+                            toggleDisabled(false);
+                            parent.frameMain3.toggleDisabled(false);
+                            return;
+                        }
+                    },
+                    onFailure: function() {
+                        top.NetFunnel_Complete({}, function(ev, ret) {});
+                        alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                    }
+                });
+            }
+
+            //우선 수강해야 하는 교과과정이 있는지 여부 체크
+            function preSubject(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno) {
+                //prototype ajax호출
+                new Ajax.Request('/course_shop/register/major_shop.do?method=presbjt',{
+                    method: 'post',
+                    parameters: {
+                        stnt_numb: '2022305080',
+                        subj_cd: subj_cd
+                    },
+                    onSuccess: function(req) {
+                        var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                        if (ct == 'text/javascript;charset=UTF-8') {
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+                        if (ct == 'text/html;charset=UTF-8') {
+                            $('container').innerHTML = req.responseText;
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+                        var arrLength = 0;
+                        splitString = req.responseText.split(',');
+                        // split 구분자로 배열로 저장
+                        arrLength = splitString.length;
+                        //배열 길이
+                        if (arrLength > 1) {
+                            var msg = "";
+                            for (i = 0; i < arrLength; i++) {
+                                if ((i % 2) != 0 && i != 0) {
+                                    msg += '[ ' + splitString[i] + ' (' + splitString[i - 1] + ') ]\r'
+                                }
+                            }
+                            check_hideLoading();
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            alert('선택하신 강좌는\r' + msg + '교과목을 선수강해야 합니다\n신청할 수 없습니다.');
+                            toggleDisabled(false);
+                            parent.frameMain3.toggleDisabled(false);
+                            return;
+                            //값이 없다면 선수과목이 없거나 수강을 했으므로 이수구분변경 여부체크
+                        } else {
+                            other_ysnoCheck(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno);
+                        }
+                    },
+                    onFailure: function() {
+                        top.NetFunnel_Complete({}, function(ev, ret) {});
+                        alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                    }
+                });
+            }
+
+            //이수구분 여부 체크
+            function other_ysnoCheck(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt, other_ysno, rotc_ysno) {
+                if ('N' == 'Y' && rotc_ysno == 'Y') {
+                    completeChange(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                } else {
+                    //이수구분이 N일경우에는 바로 그다음 체크인 재이수여부 체크
+                    if (other_ysno == "N") {
+                        check2pre(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                    }//이수구분이 N이 아닐경우에는 이수구분 여부 체크
+                    else {
+                        completeChange(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                    }
+                }
+            }
+            //타과전공시 이수구분 선택 팝업
+            function completeChange(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt) {
+                check_hideLoading();
+                top.NetFunnel_Complete({}, function(ev, ret) {});
+                //window.showModalDialog("/course_shop/register/result.do?method=list8", window,"dialogWidth:350px;dialogHeight:155px;center:1;scroll:0;help:0;status:0;");
+                var loadUrl = "/course_shop/register/result.do?method=list8";
+
+                jQuery.smartPop.open({
+                    title: '이수구분 선택',
+                    bodyClose: true,
+                    width: 350,
+                    height: 200,
+                    url: loadUrl
+                });
+
+            }
+            function fn_getUse(val) {
+                document.form1.COMPLETE_CD.value = val;
+                check_showLoading();
+                //이수구분 선택후 재이수여부 체크
+                top.NetFunnel_Action({
+                    action_id: "submit",
+                    popup_target: top.frameMain2,
+                    use_frame_block: true,
+                    frame_block_list: [{
+                        win: top.frameLeft
+                    }, {
+                        win: top.frameMain2
+                    }, {
+                        win: top.frameMain3
+                    }]
+                }, function(ev, ret) {
+                    check2pre(document.form1.SUBJ_CD.value, document.form1.SUBJ_NM.value, document.form1.CLSS_NUMB.value, document.form1.TAKING_LIMIT_CNT.value, document.form1.STNT_CNT.value, document.form1.RE_STNT_CNT.value);
+                });
+            }
+            function popCtl(check) {
+                if (check == 'N') {
+                    check_hideLoading();
+                    top.NetFunnel_Complete({}, function(ev, ret) {});
+                    alert('이수구분을 선택하지 않아 선택한 교과목 수강신청이 취소되었습니다');
+                    toggleDisabled(false);
+                    parent.frameMain3.toggleDisabled(false);
+                }
+            }
+
+            //재이수 체크(계절학기 일 경우에만 체크함)
+            function check2pre(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt) {
+                if ('2' == '3' || '2' == '4') {
+                    //prototype ajax호출
+                    new Ajax.Request('/course_shop/register/major_shop.do?method=check2pre',{
+                        method: 'post',
+                        parameters: {
+                            stnt_numb: '2022305080',
+                            subj_cd: subj_cd
+                        },
+                        onSuccess: function(req) {
+                            var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                            if (ct == 'text/javascript;charset=UTF-8') {
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                return;
+                            }
+                            if (ct == 'text/html;charset=UTF-8') {
+                                $('container').innerHTML = req.responseText;
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                return;
+                            }
+
+                            var json = req.responseText.evalJSON();
+
+                            if (json.LECT_YEAR.length == 4) {
+                                check_hideLoading();
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                alert(json.LECT_YEAR + '년도 ' + json.LECT_TERM + '학기에' + json.SUBJ_NM + '과목을 신청하셨습니다\n과목을 신청하실 수 없습니다.');
+                                toggleDisabled(false);
+                                parent.frameMain3.toggleDisabled(false);
+                                return;
+
+                                //값이 없다면 재이수가 아니므로 제한인원 체크(신규일 경우)
+                            } else {
+                                check2(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                            }
+                        },
+                        onFailure: function() {
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                        }
+                    });
+                } else {
+                    check2(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                }
+            }
+
+            //재이수 체크
+            function check2(subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt) {
+                //prototype ajax호출
+                new Ajax.Request('/course_shop/register/major_shop.do?method=check2',{
+                    method: 'post',
+                    parameters: {
+                        stnt_numb: '2022305080',
+                        subj_cd: subj_cd
+                    },
+                    onSuccess: function(req) {
+                        var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                        if (ct == 'text/javascript;charset=UTF-8') {
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+                        if (ct == 'text/html;charset=UTF-8') {
+                            $('container').innerHTML = req.responseText;
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+
+                        var json = req.responseText.evalJSON();
+
+                        if (json.LECT_YEAR.length == 4) {
+
+                            //값이 있다면 재이수 상태임
+                            if (Number(json.LECT_MAKS) > 2.5) {
+                                //학점이 2.5 이상
+                                check_hideLoading();
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                alert(json.LECT_YEAR + '년도 ' + json.LECT_TERM + '학기 ' + json.SUBJ_NM + '과목의 학점 등급이 [' + json.GRD + ']입니다.\n등급이 C+ 초과인 과목은 재이수 하실 수 없습니다.');
+                                toggleDisabled(false);
+                                parent.frameMain3.toggleDisabled(false);
+                                return;
+                            } else {
+
+                                check_hideLoading();
+                                if (confirm(json.LECT_YEAR + '년도 ' + json.LECT_TERM + '학기 ' + json.SUBJ_NM + '과목의 학점 등급이 [' + json.GRD + ']입니다\n재이수 하시겠습니까?')) {
+                                    //학점이 2.5미만 
+                                    document.form1.RE_LECT_YEAR.value = json.LECT_YEAR;
+                                    document.form1.RE_LECT_TERM.value = json.LECT_TERM;
+                                    document.form1.RE_SUBJ_CD.value = json.SUBJ_CD;
+                                    document.form1.RE_CLSS_NUMB.value = json.CLSS_NUMB;
+                                    document.form1.TLSN_FLAG.value = "R";
+                                    check_showLoading();
+                                    //재이수 여부를 확인후 제한인원 체크(재이수일 경우)
+                                    check3('1', subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                                } else {
+                                    document.form1.RE_LECT_YEAR.value = "";
+                                    document.form1.RE_LECT_TERM.value = "";
+                                    document.form1.RE_SUBJ_CD.value = "";
+                                    document.form1.RE_CLSS_NUMB.value = "";
+                                    document.form1.TLSN_FLAG.value = "";
+                                    check_hideLoading();
+                                    top.NetFunnel_Complete({}, function(ev, ret) {});
+                                    toggleDisabled(false);
+                                    parent.frameMain3.toggleDisabled(false);
+                                    return;
+                                }
+                            }
+                            //값이 없다면 재이수가 아니므로 제한인원 체크(신규일 경우)
+                        } else {
+                            check3('2', subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt);
+                        }
+                    },
+                    onFailure: function() {
+                        top.NetFunnel_Complete({}, function(ev, ret) {});
+                        alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                    }
+                });
+            }
+
+            //제한인원 체크(1:재수강인원체크, 2:신규인원체크)
+            function check3(type, subj_cd, subj_nm, clss_numb, taking_limit, stnt_cnt, re_stnt_cnt) {
+                //prototype ajax호출
+                new Ajax.Request('/course_shop/register/major_shop.do?method=check3',{
+                    method: 'post',
+                    parameters: {
+                        subj_cd: subj_cd,
+                        subj_nm: subj_nm,
+                        clss_numb: clss_numb
+                    },
+                    onSuccess: function(req) {
+                        var ct = req.getHeader('Content-type').replace(/\s+/, '');
+                        if (ct == 'text/javascript;charset=UTF-8') {
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+                        if (ct == 'text/html;charset=UTF-8') {
+                            $('container').innerHTML = req.responseText;
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            return;
+                        }
+
+                        var json = req.responseText.evalJSON();
+                        if (json.RE_CNT.length > 0) {
+                            check_hideLoading();
+                            var v_re_stnt_cnt = json.RE_CNT;
+                            //DB 현재 재수강인원
+                            var v_stnt_cnt = json.STNT_CNT;
+                            //DB 현재 수강신청인원(신규+재수강)
+
+                            /**************************************************
+	       		//수정: 2009.08.19 박형기
+	       		//분반정보에 입력된 재수강할당인원에 상관없이 먼저 신청하는 학생에게 신청 우선권 부여하도록 변경
+	       		//요청자:수업과 이석영 선생님
+	       		
+	       		//재이수수강일 경우 수강인원 체크
+	       		if(type == "1"){
+	       			if( ( Number(re_stnt_cnt) - Number(v_re_stnt_cnt) ) <= 0 ){
+	
+	       				if(re_stnt_cnt == 0){
+	       					check_hideLoading();
+	       					alert('선택된 강좌는 할당된 재수강 인원이 없습니다\n신청할 수 없습니다');
+	       					toggleDisabled(false);
+				        	parent.frameMain3.toggleDisabled(false);
+	       					return;
+	       				}else{
+	       					check_hideLoading();
+		       				alert('선택강좌의 재수강 제한인원 ' + re_stnt_cnt +'명을 초과하였습니다\n신청할 수 없습니다');
+		       				toggleDisabled(false);
+				        	parent.frameMain3.toggleDisabled(false);
+		       				return;
+	       				}
+	       			}else{		
+	       				doProcedure();
+	       			}
+	       		}
+	       		//신규수강일 경우 수강인원 체크
+	       		else if(type == "2"){
+	       			//DB에서 받아온 현재수강인원이 많을 경우 
+	       			if( Number(v_stnt_cnt) > Number(stnt_cnt)){
+	       				stnt_cnt = v_stnt_cnt;
+	       			}
+	       			if ( Number(taking_limit) <= ( Number(stnt_cnt) )  ){
+	       				check_hideLoading();
+	       				alert('신규수강 제한인원을 초과하였습니다\n신청할 수 없습니다');
+	       				toggleDisabled(false);
+			        	parent.frameMain3.toggleDisabled(false);
+	       				return;
+	       			}else{
+	       				doProcedure();
+	       			} 
+	       		} else{
+	       			alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+	       			toggleDisabled(false);
+		        	parent.frameMain3.toggleDisabled(false);
+	       		}
+	       		**************************************************/
+
+                            //2009.08.19 추가(기존 로직 주석처리(바로윗부분)
+                            if (Number(v_stnt_cnt) > Number(stnt_cnt)) {
+                                stnt_cnt = v_stnt_cnt;
+                            }
+                            if (Number(taking_limit) <= (Number(stnt_cnt))) {
+                                check_hideLoading();
+                                top.NetFunnel_Complete({}, function(ev, ret) {});
+                                alert('수강 제한인원을 초과하였습니다\n신청할 수 없습니다');
+                                toggleDisabled(false);
+                                parent.frameMain3.toggleDisabled(false);
+                                return;
+                            } else {
+                                doProcedure();
+                            }
+
+                        } else {
+                            check_hideLoading();
+                            top.NetFunnel_Complete({}, function(ev, ret) {});
+                            alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                            toggleDisabled(false);
+                            parent.frameMain3.toggleDisabled(false);
+                        }
+                    },
+                    onFailure: function() {
+                        check_hideLoading();
+                        top.NetFunnel_Complete({}, function(ev, ret) {});
+                        alert('에러가 발생했습니다. 관리자에게 문의하세요.');
+                        toggleDisabled(false);
+                        parent.frameMain3.toggleDisabled(false);
+                    }
+                });
+            }
+
+            //프로시져 호출
+            function doProcedure() {
+                check_hideLoading();
+                showLoading();
+                //toggleDisabled(false);
+                document.form1.action = '/course_shop/register/major_shop.do?method=proc';
+                document.form1.target = '_self';
+
+                document.form1.submit();
+
+            }
+
+            //버튼 토글
+            function toggleDisabled(type) {
+                var inputObj = document.getElementsByTagName('input');
+                for (var i = 0; i < inputObj.length; i++) {
+                    if (inputObj[i].type == 'button') {
+                        inputObj[i].disabled = type;
+                    }
+                }
+            }
+
+            //수업계획 조회(RD)
+            function pSubjPlan(subj_cd, clss_numb, prof1) {
+                var frm = document.forms["form1"].elements;
+                frm.param.value = "/rp [] [] [] [] [] [" + 2022 + "] [" + 2 + "] [" + subj_cd + clss_numb + "] [" + prof1 + "]  [] /rl [] /rf [http://portal.skuniv.ac.kr/RDServer/rdagent.jsp] /rsn [jdbc/Altibase]";
+                frm.mrd.value = "http://portal.skuniv.ac.kr/course_shop/mrd/UCS_03080_P.mrd";
+                frm.action = "http://portal.skuniv.ac.kr/RDServer/rdview.jsp";
+                frm.target = "_print";
+                frm.method = "post";
+                frm.submit();
+            }
+        </script>
+    </head>
+    <body oncontextmenu="return false" ondragstart="return false" onselectstart="return false">
+        <div id="container" style="overflow:auto;height:100%;">
+            <form name="form1" method="post">
+                <input type="hidden" name="STNT_NUMB" value="2022305080">
+                <!-- 개설과목 type 및 Parameter -->
+                <input type="hidden" name="TYPE" value="1"/>
+                <!-- <input type="hidden" name="S_SCHYR" value=""/>  -->
+                <!-- 대학 학과 전공  -->
+                <input type="hidden" name="COL" value="13040000"/>
+                <input type="hidden" name="SUBJ_STD" value="13040700"/>
+                <input type="hidden" name="MAJ" value="0"/>
+                <input type="hidden" name="S_COMPLETE_CD" value=""/>
+                <input type="hidden" name="S_SUBJ_NM" value=""/>
+                <!-- Insert Hidden Value -->
+                <input type="hidden" name="SUBJ_CD"/>
+                <input type="hidden" name="CLSS_NUMB"/>
+                <input type="hidden" name="COMPLETE_CD">
+                <input type="hidden" name="SUBJ_PONT"/>
+                <input type="hidden" name="SUBJ_TIME"/>
+                <input type="hidden" name="SCHL_SHYR"/>
+                <input type="hidden" name="RE_LECT_YEAR"/>
+                <input type="hidden" name="RE_LECT_TERM"/>
+                <input type="hidden" name="RE_SUBJ_CD"/>
+                <input type="hidden" name="RE_CLSS_NUMB"/>
+                <input type="hidden" name="TLSN_FLAG"/>
+                <input type="hidden" name="SUBJ_NM"/>
+                <input type="hidden" name="TAKING_LIMIT_CNT"/>
+                <input type="hidden" name="STNT_CNT"/>
+                <input type="hidden" name="RE_STNT_CNT"/>
+                <input type="hidden" name="CR_ADDR" value="125.177.124.47"/>
+                <!-- 수업계획(RD)  -->
+                <!-- 운영서버 -->
+                <input type="hidden" name="mrd" value="http://portal.skuniv.ac.kr/course_shop/mrd/UCS_03080_P.mrd">
+                <input type="hidden" name="title" value="수업계획서">
+                <input type="hidden" name="param" value="/rp [] [] [] []">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr style='position:relative;top:expression(this.offsetParent.scrollTop);'>
+                            <td class="con_title" style="background:white">&nbsp;</td>
+                        </tr>
+                        <tr style='position:relative;top:expression(this.offsetParent.scrollTop);'>
+                            <td class="con_title" style="background:white">
+                                [자학과 개설강좌]
+								
+								<font color="red"></font>
+                            </td>
+                        </tr>
+                        <tr style='position:relative;top:expression(this.offsetParent.scrollTop);'>
+                            <td>
+                                <table width="100%" border="0" cellpadding="1" cellspacing="1" bgcolor="#999999">
+                                    <tr>
+                                        <td class="contb_title" style="width:10%">장바구니담기</td>
+                                        <td class="contb_title" style="width:3%">No</td>
+                                        <td class="contb_title" style="width:18%">교과목명</td>
+                                        <td class="contb_title" style="width:7%">학수번호</td>
+                                        <td class="contb_title" style="width:3%">분반</td>
+                                        <td class="contb_title" style="width:4%">
+                                            이수<br/>구분
+                                        </td>
+                                        <!--<td class="contb_title" style="width:5%">학년</td>-->
+                                        <td class="contb_title" style="width:3%">
+                                            학<br/>점
+                                        </td>
+                                        <td class="contb_title" style="width:3%">
+                                            시<br/>간
+                                        </td>
+                                        <td class="contb_title" style="width:4%">
+                                            수강<br/>인원
+                                        </td>
+                                        <td class="contb_title" style="width:4%">
+                                            제한<br/>인원
+                                        </td>
+                                        <td class="contb_title" style="width:9%">담당교수</td>
+                                        <td class="contb_title" style="width:6%">성적평가방법</td>
+                                        <td class="contb_title" style="width:6%">학기주차</td>
+                                        <td class="contb_title" style="width:9%">강의실명</td>
+                                        <td class="contb_title" style="width:6%">
+                                            강의시간<br/>(주)주간,(야)야간
+                                        </td>
+                                        <!--td class="contb_title" style="width:5%">수업<br />계획</td-->
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tr>
+                        <td style="background:white">
+                            <table width="100%" border="0" cellpadding="1" cellspacing="1" bgcolor="#999999">
+                                <tbody style="overflow:auto;max-height:100%;">
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1144','03'
+																			,'0','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'21', '22', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'C프로그래밍활용','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">1
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">C프로그래밍활용
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1144
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">03
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 21, 22
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1144','03','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1144','04'
+																			,'30','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'C프로그래밍활용','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">2
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">C프로그래밍활용
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1144
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">04
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1144','04','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1144','02'
+																			,'0','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'21', '22', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'C프로그래밍활용','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">C프로그래밍활용
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1144
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 21, 22
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1144','02','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1144','01'
+																			,'0','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'1', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'C프로그래밍활용','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">4
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">C프로그래밍활용
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1144
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														월: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1144','01','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1168','01'
+																			,'30','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'23','3','3'
+																			,'1', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'VR/AR','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">5
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">VR/AR
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1168
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전공
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김태영
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														월: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1168','01','12002021')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1088','01'
+																			,'50','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '4', '0', '0', '0'
+																			,'24', '00', '00', '00'
+																			,'24', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'공학수학','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">6
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">공학수학
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1088
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">50
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">박태룡
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터공학과강의실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 24, 목: 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1088','01','11994018')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1103','01'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'논리회로실험','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">7
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">논리회로실험
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1103
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">조영완
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터시스템설계실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1103','01','12003007')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1103','02'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'3', '0', '0', '0', '0'
+																			,'22', '23', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'논리회로실험','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">8
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">논리회로실험
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1103
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														수: 22, 23
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1103','02','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1103','03'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'논리회로실험','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">9
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">논리회로실험
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1103
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">03
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터시스템설계실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1103','03','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1146','02'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'3', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'닷넷프로그래밍','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">닷넷프로그래밍
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1146
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">이양선
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														수: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1146','02','11994006')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1146','01'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'닷넷프로그래밍','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">11
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">닷넷프로그래밍
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1146
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">이양선
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1146','01','11994006')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1118','01'
+																			,'50','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'데이터베이스관리','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">12
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">데이터베이스관리
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1118
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">50
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">손용락
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터공학과강의실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1118','01','11995020')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1127','01'
+																			,'25','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'디지털영상처리','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">13
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">디지털영상처리
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1127
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">25
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김진헌
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1127','01','11995023')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1047','01'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'22', '23', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'비주얼객체지향프로그래밍','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">14
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">비주얼객체지향프로그래밍
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1047
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김태영
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 22, 23
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1047','01','12002021')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1159','01'
+																			,'30','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'빅데이터분산컴퓨팅','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">15
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">빅데이터분산컴퓨팅
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1159
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김재현
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1159','01','11994003')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1149','01'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'1', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'스마트폰프로그래밍','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">16
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">스마트폰프로그래밍
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1149
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김재현
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														월: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1149','01','11994003')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1110','01'
+																			,'50','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'1', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'알고리즘','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">17
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">알고리즘
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1110
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">50
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">손용락
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														월: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1110','01','11995020')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1110','02'
+																			,'50','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'알고리즘','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">18
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">알고리즘
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1110
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">50
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">손용락
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1110','02','11995020')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1165','01'
+																			,'24','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'1', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'인공지능','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">19
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">인공지능
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1165
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">24
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">임철수
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-회로실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														월: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1165','01','11997001')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1165','02'
+																			,'24','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'22', '23', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'인공지능','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">20
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">인공지능
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1165
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">24
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">임철수
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-회로실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 22, 23
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1165','02','11997001')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1165','03'
+																			,'24','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'22', '23', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'인공지능','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">21
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">인공지능
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1165
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">03
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">24
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">임철수
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 22, 23
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1165','03','11997001')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1150','01'
+																			,'50','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'1', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'인증시스템','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">22
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">인증시스템
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1150
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">50
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">박태룡
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터공학과강의실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														월: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1150','01','11994018')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1999','01'
+																			,'99','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'23','P','0'
+																			,'0', '0', '0', '0', '0'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'졸업논문및시험','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">23
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">졸업논문및시험
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1999
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전공
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">P
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">99
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1999','01','')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1158','04'
+																			,'10','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'5', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'종합설계2','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">24
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">종합설계2
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1158
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">04
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">조영완
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-회로실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														금: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1158','04','12003007')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1158','05'
+																			,'10','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'10', '11', '12', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'종합설계2','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">25
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">종합설계2
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1158
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">05
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">이대원
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 10, 11, 12
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1158','05','20090104')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1158','06'
+																			,'10','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'5', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'종합설계2','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">26
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">종합설계2
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1158
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">06
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">남기훈
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-APP창작터사무실(709호)
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														금: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1158','06','12006013')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1158','02'
+																			,'10','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'5', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'종합설계2','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">27
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">종합설계2
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1158
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김진헌
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터시스템설계실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														금: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1158','02','11995023')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1158','01'
+																			,'10','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'5', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'종합설계2','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">28
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">종합설계2
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1158
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김태영
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-김태영교수연구실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														금: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1158','01','12002021')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1158','03'
+																			,'10','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'5', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'종합설계2','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">29
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">종합설계2
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1158
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">03
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">10
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김재현
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														금: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1158','03','11994003')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE0043','01'
+																			,'30','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'2', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'컴퓨터공학실험','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">컴퓨터공학실험
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE0043
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														11
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">이대원
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터시스템설계실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														화: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE0043','01','20090104')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1169','02'
+																			,'30','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'23','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'23', '24', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'클라우드컴퓨팅','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">31
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">클라우드컴퓨팅
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1169
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전공
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">이대원
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-융합컴퓨팅실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 23, 24
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1169','02','20090104')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1169','01'
+																			,'30','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'23','3','3'
+																			,'3', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'클라우드컴퓨팅','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">32
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">클라우드컴퓨팅
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1169
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전공
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+														13
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">30
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">이대원
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														수: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														 style="background-color:#E7F0FF;">
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1169','01','20090104')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1164','02'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'4', '0', '0', '0', '0'
+																			,'25', '26', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'파이썬프로그래밍','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">33
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">파이썬프로그래밍
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1164
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">02
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김재현
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-응용소프트웨어실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														목: 25, 26
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1164','02','11994003')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1164','01'
+																			,'35','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'3', '0', '0', '0', '0'
+																			,'22', '23', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'파이썬프로그래밍','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">34
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">파이썬프로그래밍
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1164
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														12
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">김진헌
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-컴퓨터시스템설계실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														수: 22, 23
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1164','01','11995023')">
+													</td-->
+                                    </tr>
+                                    <tr>
+                                        <td class="contb_con" style="width:10%" style='background-color:#E7F0FF;'>
+                                            <input class=tb type=button style=width:100px value=장바구니담기 id=sugang_button onclick="doSubmit('CE1134','01'
+																			,'25','0','0'
+																			,'13040000','13040700','00000000','N'
+																			,'27','3','3'
+																			,'3', '0', '0', '0', '0'
+																			,'22', '23', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'00', '00', '00', '00'
+																			,'휴먼컴퓨터인터페이스','10','N','N'
+																			);"/>
+                                        </td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">35
+													</td>
+                                        <td class="contb_con_left" style="width:18%" style="background-color:#E7F0FF;">휴먼컴퓨터인터페이스
+													</td>
+                                        <td class="contb_con" style="width:7%" style="background-color:#E7F0FF;">CE1134
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">01
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">전심
+													</td>
+                                        <!-- 
+													<td class="contb_con" style="width:5%"
+														>
+														14
+													</td>
+													-->
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:3%" style="background-color:#E7F0FF;">3
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">0
+													</td>
+                                        <td class="contb_con" style="width:4%" style="background-color:#E7F0FF;">25
+													</td>
+                                        <td class="contb_con" style="width:9%" style="background-color:#E7F0FF;">임철수
+													</td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con" style="width:6%" style="background-color:#E7F0FF;"></td>
+                                        <td class="contb_con_left" style="width:9%" style="background-color:#E7F0FF;">(북)-회로실습실
+													</td>
+                                        <td class="contb_con_left" style="width:6%" style="background-color:#E7F0FF;">(주)
+														
+														수: 22, 23
+													</td>
+                                        <!--td class="contb_con" style="width:5%"
+														>
+
+														<input type="button" value="조회" class="tb"
+															style="width:30"
+															onClick="javascript:pSubjPlan('CE1134','01','11997001')">
+													</td-->
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        <div id="check_loading" style="position:absolute;width:document.body.scrollWidth;height:document.body.scrollHeight;z-index:1;left:0px;top:-50;display:none;" align="center" valign="middle">
+            <table width="100%" height="500">
+                <tr>
+                    <td align="center">
+                        <table width="200" height="100" bgcolor="#F5F5F5">
+                            <tr>
+                                <td align="center" bgcolor="#FFFFFF">
+                                    <img src="/course_shop/img/sugang/loading.gif"/>
+                                    &nbsp;
+                                    <b>
+                                        &nbsp;
+                                        <font style="font-size:9pt;face:신명조;">
+                                            신청가능한 강좌인지 <br/>확인중입니다...
+                                        </font>
+                                    </b>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="loading" style="position:absolute;width:document.body.scrollWidth;height:document.body.scrollHeight;z-index:1;left:0px;top:-50;display:none;" align="center" valign="middle">
+            <table width="100%" height="500">
+                <tr>
+                    <td align="center">
+                        <table width="200" height="100" bgcolor="#F5F5F5">
+                            <tr>
+                                <td align="center" bgcolor="#FFFFFF">
+                                    <img src="/course_shop/img/sugang/loading.gif"/>
+                                    &nbsp;
+                                    <b>
+                                        &nbsp;<font style="font-size:9pt;face:신명조;">신청중입니다...</font>
+                                    </b>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="maj_loading" style="position:absolute;width:document.body.scrollWidth;height:document.body.scrollHeight;z-index:1;left:0px;top:-50;display:none;" align="center" valign="middle">
+            <table width="100%" height="500">
+                <tr>
+                    <td align="center">
+                        <table width="200" height="100" bgcolor="#F5F5F5">
+                            <tr>
+                                <td align="center" bgcolor="#FFFFFF">
+                                    <img src="/course_shop/img/sugang/loading.gif"/>
+                                    &nbsp;
+                                    <b>
+                                        &nbsp;<font style="font-size:9pt;face:신명조;">강좌를 조회중입니다...</font>
+                                    </b>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>
