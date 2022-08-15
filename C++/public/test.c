@@ -4,13 +4,8 @@
 #include <time.h>
 #include <malloc.h>
 
-
 typedef char* string;
-/*
-int main() {
-	string st = "hello, world!";
-	printf("%s", st);
 
-	return 0;
+void main(void) {
+	printf("Hello, World!");
 }
-*/
