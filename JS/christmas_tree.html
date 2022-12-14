@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+      body {
+        line-height: 14px;
+        letter-spacing: -0.07em;
+        text-align: center;
+        background-color: #0D1117;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+    let count = 1;
+    const size = 30;
+    const tree = document.createElement('div');
+
+    function addBlank() {
+        const blank = document.createElement('span');
+        blank.classList.add('blank');
+        tree.appendChild(blank);
+    }
+    
+    function addLeaf() {
+        const leaf = document.createElement('span');
+        leaf.classList.add('leaf');
+        leaf.setAttribute('id', count++);
+        tree.appendChild(leaf);
+    }
+    
+    function addTrunk() {
+        const trunk = document.createElement('span');
+        trunk.classList.add('trunk');
+        tree.appendChild(trunk);
+    }
+    
+    for (var i = 0; i < size; i++) {
+        for (var j = i; j < size; j++) {
+            addBlank();
+        }
+        addLeaf();
+        for (var k = 0; k < i; k++) {
+            addLeaf();   
+        }
+        for (var j = i; j < size; j++) {
+            addBlank();
+        }
+        const br = document.createElement('br');
+        tree.appendChild(br);
+    }
+    for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < size - 3; j++) {
+            addBlank();
+        }
+        for (var k = 0; k < 7; k++) {
+            addTrunk();
+        }
+        for (var j = 0; j < size - 3; j++) {
+            addBlank();
+        }
+        const br = document.createElement('br');
+        tree.appendChild(br);
+    }
+    
+    document.body.appendChild(tree);
+
+    $(".blank").html("&nbsp;");
+    $(".leaf").text("*");
+    $(".trunk").text("|");
+
+    const colors = [
+      "#941f1f",
+      "#a70006",
+      "#a32c28",
+      "#c50537",
+      "#34502b",
+      "#535233",
+      "#7b8055",
+      "#a5a36c",
+      "#f0d890",
+      "#bca875",
+      "#e8caaf",
+      "#e0d2c5",
+      "#f0f0f0",
+      "#eee0b7",
+      "#e8efc9",
+      "#006400",
+      "#517f1f",
+      "#005940",
+    ];
+    
+    const leaves = document.querySelectorAll('.leaf');
+    setInterval(() => {
+      leaves.forEach((leaf) => {
+        leaf.style.color = colors[Math.floor(Math.random() * colors.length)];
+    });
+    }, 1000);
+    </script>
+  </body>
+</html>
